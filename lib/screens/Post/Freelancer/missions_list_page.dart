@@ -1,4 +1,5 @@
 import 'package:esprit/screens/Post/Client/CreateMissionPage.dart';
+import 'package:esprit/screens/Test/SkillTestPage.dart';
 import 'package:flutter/material.dart';
 
 import '../../LoginPage.dart' show AppColors;
@@ -324,7 +325,21 @@ class _MissionsListPageState extends State<MissionsListPage> {
       ),
       child: BottomNavigationBar(
         currentIndex: _navIndex,
-        onTap: (i) => setState(() => _navIndex = i),
+        onTap: (i){
+          if (i == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SkillTestPage(),
+              ),
+            );
+          } else {
+            setState(() {
+              _navIndex = i;
+            });
+          }
+        },
+
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -338,6 +353,7 @@ class _MissionsListPageState extends State<MissionsListPage> {
             activeIcon: Icon(Icons.work),
             label: 'Missions',
           ),
+
           BottomNavigationBarItem(
             icon: Icon(Icons.description_outlined),
             activeIcon: Icon(Icons.description),
