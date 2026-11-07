@@ -385,7 +385,7 @@ screenshots/                  # captures d'écran du README
 
 <div align="center">
 
-Réalisé avec ❤️ par **[Brahim Garram](https://github.com/BrahimGarram)**
+Réalisé par **[Mohamed Brahim Garram](https://github.com/BrahimGarram)**
 
 <sub>Projet mobile · 2026-2027</sub>
 
