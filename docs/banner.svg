@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-label="Freelancify : missions, talents certifiés et IA">
+  <defs>
+    <radialGradient id="haloRouge" cx="0.18" cy="0.2" r="0.55">
+      <stop offset="0" stop-color="#EE1D52" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#EE1D52" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="haloCyan" cx="0.85" cy="0.9" r="0.6">
+      <stop offset="0" stop-color="#25F4EE" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#25F4EE" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="trait" x1="0" x2="1">
+      <stop offset="0" stop-color="#25F4EE"/>
+      <stop offset="0.5" stop-color="#E9C46A"/>
+      <stop offset="1" stop-color="#EE1D52"/>
+    </linearGradient>
+    <pattern id="grille" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#FFFFFF" stroke-opacity="0.04"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="420" rx="28" fill="#000000"/>
+  <rect width="1280" height="420" rx="28" fill="url(#grille)"/>
+  <rect width="1280" height="420" rx="28" fill="url(#haloRouge)"/>
+  <rect width="1280" height="420" rx="28" fill="url(#haloCyan)"/>
+
+  <!-- Logo « F » effet glitch -->
+  <g transform="translate(160 118)">
+    <rect width="120" height="120" rx="30" fill="#121212" stroke="#FFFFFF" stroke-opacity="0.12" stroke-width="2"/>
+    <text x="57" y="88" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="78" font-weight="800" text-anchor="middle" fill="#25F4EE">F</text>
+    <text x="63" y="92" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="78" font-weight="800" text-anchor="middle" fill="#EE1D52">F</text>
+    <text x="60" y="90" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="78" font-weight="800" text-anchor="middle" fill="#FFFFFF">F</text>
+  </g>
+
+  <!-- Nom effet glitch -->
+  <g font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="96" font-weight="800" letter-spacing="-3">
+    <text x="317" y="210" fill="#25F4EE">Freelancify</text>
+    <text x="323" y="214" fill="#EE1D52">Freelancify</text>
+    <text x="320" y="212" fill="#FFFFFF">Freelancify</text>
+  </g>
+
+  <rect x="322" y="236" width="300" height="5" rx="2.5" fill="url(#trait)"/>
+
+  <text x="322" y="282" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="27" fill="#D4D4D8">
+    La plateforme freelance mobile, propulsée par l'IA
+  </text>
+
+  <!-- Pastilles -->
+  <g font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="19" font-weight="700">
+    <rect x="322" y="314" width="148" height="40" rx="20" fill="#25F4EE" fill-opacity="0.12" stroke="#25F4EE" stroke-opacity="0.6"/>
+    <text x="396" y="340" text-anchor="middle" fill="#25F4EE">Missions</text>
+    <rect x="484" y="314" width="196" height="40" rx="20" fill="#E9C46A" fill-opacity="0.12" stroke="#E9C46A" stroke-opacity="0.6"/>
+    <text x="582" y="340" text-anchor="middle" fill="#E9C46A">Certifications</text>
+    <rect x="694" y="314" width="150" height="40" rx="20" fill="#B794F6" fill-opacity="0.12" stroke="#B794F6" stroke-opacity="0.6"/>
+    <text x="769" y="340" text-anchor="middle" fill="#B794F6">IA Gemini</text>
+    <rect x="858" y="314" width="176" height="40" rx="20" fill="#EE1D52" fill-opacity="0.12" stroke="#EE1D52" stroke-opacity="0.6"/>
+    <text x="946" y="340" text-anchor="middle" fill="#FF6B8A">Hors connexion</text>
+  </g>
+</svg>
