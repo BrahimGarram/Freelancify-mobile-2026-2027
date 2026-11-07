@@ -94,16 +94,14 @@ et postulent. Tout fonctionne **hors connexion** ; l'IA s'active dès qu'il y a 
 
 <table>
 <tr>
-<td align="center"><img src="screenshots/01-connexion.png" width="200" alt="Connexion"><br><sub><b>Connexion</b></sub></td>
-<td align="center"><img src="screenshots/02-missions.png" width="200" alt="Fil des missions"><br><sub><b>Fil des missions</b></sub></td>
-<td align="center"><img src="screenshots/03-publier-ia.png" width="200" alt="Publier avec l'IA"><br><sub><b>Publier avec l'IA</b></sub></td>
-<td align="center"><img src="screenshots/04-assistant.png" width="200" alt="Assistant IA"><br><sub><b>Assistant IA</b></sub></td>
+<td align="center" width="33%"><img src="screenshots/connexion.png" width="230" alt="Connexion"><br><b>Connexion</b><br><sub>Accès rapide, mot de passe oublié, aide</sub></td>
+<td align="center" width="33%"><img src="screenshots/missions.png" width="230" alt="Mes posts"><br><b>Mes posts</b><br><sub>Le tableau de bord du client</sub></td>
+<td align="center" width="33%"><img src="screenshots/postia.png" width="230" alt="Publier avec l'IA"><br><b>Publier avec l'IA</b><br><sub>Une phrase suffit pour remplir le formulaire</sub></td>
 </tr>
 <tr>
-<td align="center"><img src="screenshots/05-quiz.png" width="200" alt="Quiz chronométré"><br><sub><b>Quiz chronométré</b></sub></td>
-<td align="center"><img src="screenshots/06-resultat.png" width="200" alt="Résultat et rapport IA"><br><sub><b>Résultat et rapport IA</b></sub></td>
-<td align="center"><img src="screenshots/07-certificat.png" width="200" alt="Certificat"><br><sub><b>Certificat</b></sub></td>
-<td align="center"><img src="screenshots/08-profil.png" width="200" alt="Profil"><br><sub><b>Profil</b></sub></td>
+<td align="center" width="33%"><img src="screenshots/assistantia.png" width="230" alt="Assistant IA"><br><b>Assistant IA</b><br><sub>Des réponses courtes, selon ton rôle</sub></td>
+<td align="center" width="33%"><img src="screenshots/rapportia.png" width="230" alt="Rapport de l'IA"><br><b>Rapport de l'IA</b><br><sub>Points forts, à améliorer, conseils</sub></td>
+<td align="center" width="33%"><img src="screenshots/profil.png" width="230" alt="Profil"><br><b>Profil</b><br><sub>Statistiques, domaines fixés, profil à compléter</sub></td>
 </tr>
 </table>
 
