@@ -22,7 +22,7 @@ et postulent. Une fois le compte créé, tout fonctionne **hors connexion** ; l'
 ![PDF](https://img.shields.io/badge/Certificat-PDF-EC1C24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
 ![Observer](https://img.shields.io/badge/Design%20Pattern-Observer-F7B93E?style=for-the-badge&logo=databricks&logoColor=black)
 
-![Tests](https://img.shields.io/badge/Tests-123%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
+![Tests](https://img.shields.io/badge/Tests-134%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
 ![Lint](https://img.shields.io/badge/flutter%20analyze-0%20probl%C3%A8me-25F4EE?style=for-the-badge&logo=dart&logoColor=black)
 ![Langue](https://img.shields.io/badge/Interface-Fran%C3%A7ais-EE1D52?style=for-the-badge&logo=googletranslate&logoColor=white)
 
@@ -156,6 +156,7 @@ flowchart LR
 
 - **140 questions** (20 par domaine : Design, Développement, Vidéo, Photo, Rédaction, Marketing, Traduction), choix mélangés à chaque affichage.
 - **Chronomètre par question** : temps écoulé = question fausse, passage automatique. Pas de retour en arrière.
+- **Tentative supplémentaire** : après 3 échecs, un formulaire contrôlé (motif, explication, révisions, heures, engagement) accorde une dernière tentative, une seule fois ; la demande reste consultable avec son statut.
 - **3 tentatives** au total ; une tentative compte dès le début (abandonner ne la rend pas). Un test réussi ne se repasse pas.
 - Correction calculée **depuis la base**, enregistrée dans une transaction.
 - **Certificat** : nom, métier, domaines, compétences validées, score, mention (*Passable → Excellent*), date et numéro unique `FRL-2026-XXXXXX`. Téléchargeable en **PDF** (dossier *Téléchargements*) ou partageable.
@@ -184,7 +185,7 @@ flowchart TB
         M[Gmail SMTP]
     end
     UI --> SRV
-    SRV <--> DB[(🗄️ SQLite<br/>15 tables · v13)]
+    SRV <--> DB[(🗄️ SQLite<br/>16 tables · v15)]
     SV2 -. rapport .-> G
     UI -. assistant · post .-> G
     SV4 --> M
@@ -235,7 +236,7 @@ classDiagram
 </details>
 
 <details>
-<summary><b>🗄️ Base de données (SQLite, version 13)</b></summary>
+<summary><b>🗄️ Base de données (SQLite, version 15)</b></summary>
 
 <br>
 
@@ -263,10 +264,11 @@ erDiagram
 | `abonnements` · `notifications` | Suivi des clients et notifications (Observer) |
 | `test` | Banque de 140 questions, avec la durée de chacune |
 | `tentatives_test` · `reponses_test` | Tests passés et réponses données |
+| `demandes_tentative` | Demandes de tentative supplémentaire après 3 échecs |
 | `certifications` · `rapports_test` | Certificats délivrés et rapports de l'IA |
 | `emails_sortants` · `codes_reinitialisation` · `verifications_email` | File d'envoi des emails (5 essais) et codes temporaires |
 
-Les **migrations** font passer une ancienne installation à la version 13 **sans perdre de données**.
+Les **migrations** font passer une ancienne installation à la version 15 **sans perdre de données**.
 
 </details>
 
@@ -325,7 +327,7 @@ flutter run
 ## 🧪 Tests
 
 ```bash
-flutter test      # 123 tests
+flutter test      # 134 tests
 flutter analyze   # 0 problème
 ```
 
@@ -349,7 +351,7 @@ Les tests utilisent une **base SQLite en mémoire** et des **faux clients HTTP**
 lib/
 ├── main.dart                 # démarrage : secrets, observateurs, app
 ├── database/
-│   ├── database_helper.dart  # 15 tables, migrations v1 → v13
+│   ├── database_helper.dart  # 16 tables, migrations v1 → v15
 │   └── questions_test.dart   # banque de 140 questions
 ├── models/                   # User, Post, Candidature, Quiz, Certification…
 ├── observer/                 # pattern Observer : Sujet, Observateur, FluxPosts
@@ -365,7 +367,7 @@ lib/
 │   ├── assistant/ · messages/
 │   └── …                     # connexion, inscription, profil, notifications
 ├── theme/ · utils/ · widgets/
-test/                         # 123 tests (unitaires et widgets)
+test/                         # 134 tests (unitaires et widgets)
 assets/config/                # secrets.json (non versionné)
 screenshots/                  # captures d'écran du README
 ```

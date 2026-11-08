@@ -48,9 +48,11 @@ class DatabaseHelper {
       // Version 12 : 3 tentatives max (une tentative compte dès le début du
       //              test) et rapports de l'IA après chaque test.
       // Version 13 : codes de vérification de l'email à l'inscription.
+      // Version 14 : demandes de tentative supplémentaire après 3 échecs.
+      // Version 15 : statut de ces demandes (« en cours » par défaut).
       // Si l'app était déjà installée, onUpgrade met la base à jour
       // sans effacer tes utilisateurs.
-      version: 13,
+      version: 15,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -74,6 +76,7 @@ class DatabaseHelper {
     await _createAbonnementsEtNotifications(db);
     await _createTestsEtCertifications(db);
     await _createVerificationsEmail(db);
+    await _createDemandesTentative(db);
   }
 
   // App déjà installée avec une ancienne version
@@ -138,6 +141,16 @@ class DatabaseHelper {
     }
     if (oldVersion < 13) {
       await _createVerificationsEmail(db);
+    }
+    if (oldVersion < 14) {
+      await _createDemandesTentative(db);
+    }
+    if (oldVersion < 15 &&
+        !await _colonneExiste(db, 'demandes_tentative', 'statut')) {
+      await db.execute(
+        "ALTER TABLE demandes_tentative ADD COLUMN statut TEXT NOT NULL "
+        "DEFAULT 'en_cours'",
+      );
     }
   }
 
@@ -302,6 +315,25 @@ class DatabaseHelper {
 
   /// Codes à 6 chiffres envoyés par email pour réinitialiser un mot de
   /// passe. Le code n'est jamais stocké en clair (seulement son hash).
+  /// Formulaire rempli après 3 échecs. UNIQUE : une seule demande par
+  /// freelancer ; chaque ligne donne droit à une tentative de plus.
+  Future<void> _createDemandesTentative(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS demandes_tentative (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        freelancer_id INTEGER NOT NULL UNIQUE,
+        motif TEXT NOT NULL,
+        precision_motif TEXT,
+        explication TEXT NOT NULL,
+        revisions TEXT NOT NULL,
+        heures INTEGER NOT NULL CHECK (heures BETWEEN 1 AND 200),
+        date_demande TEXT NOT NULL,
+        statut TEXT NOT NULL DEFAULT 'en_cours',
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
   /// Inscription en attente : le code envoyé à une adresse (une ligne par
   /// adresse). Le compte n'est créé dans `users` qu'une fois le code validé.
   Future<void> _createVerificationsEmail(Database db) async {

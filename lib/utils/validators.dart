@@ -33,6 +33,13 @@ class Validators {
   static const bioMax = 500;
   static const clientMax = 60;
   static const lienMax = 200;
+  static const precisionMotifMin = 5;
+  static const precisionMotifMax = 60;
+  static const explicationDemandeMin = 30;
+  static const explicationDemandeMax = 300;
+  static const revisionsDemandeMin = 20;
+  static const revisionsDemandeMax = 200;
+  static const heuresRevisionMax = 200;
   static const imageMaxOctets = 5 * 1024 * 1024; // 5 Mo
   static const extensionsImage = ['jpg', 'jpeg', 'png', 'webp'];
 
@@ -316,6 +323,62 @@ class Validators {
   }
 
   // ---------- Outil commun ----------
+  // ---------- Demande de tentative supplémentaire ----------
+  /// Obligatoire seulement si le motif est « Autre »
+  static String? precisionMotif(String? value, String? motif) {
+    if (motif != 'autre') return null;
+    return _texte(
+      value,
+      vide: 'Précise le motif',
+      min: precisionMotifMin,
+      max: precisionMotifMax,
+    );
+  }
+
+  static String? explicationDemande(String? value) =>
+      _texte(
+        value,
+        vide: 'Explique ce qui s\'est passé',
+        min: explicationDemandeMin,
+        max: explicationDemandeMax,
+      ) ??
+      _phrase(value, mots: 5);
+
+  static String? revisionsDemande(String? value) =>
+      _texte(
+        value,
+        vide: 'Indique ce que tu as révisé',
+        min: revisionsDemandeMin,
+        max: revisionsDemandeMax,
+      ) ??
+      _phrase(value, mots: 3);
+
+  static String? heuresRevision(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return 'Indique le nombre d\'heures';
+    if (!RegExp(r'^\d+$').hasMatch(v)) return 'Nombre entier uniquement';
+    final n = int.parse(v);
+    if (n < 1) return 'Au moins 1 heure';
+    if (n > heuresRevisionMax) return '$heuresRevisionMax heures maximum';
+    return null;
+  }
+
+  static String? engagement(bool? value) =>
+      value == true ? null : 'Tu dois accepter cet engagement';
+
+  /// Refuse les textes de remplissage (« aaaaaaaa », « 12345 »…)
+  static String? _phrase(String? value, {required int mots}) {
+    final v = value!.trim().toLowerCase();
+    final liste = v
+        .split(RegExp(r'\s+'))
+        .where((m) => RegExp(r'\p{L}{2,}', unicode: true).hasMatch(m))
+        .toList();
+    if (liste.length < mots || liste.toSet().length < (mots + 1) ~/ 2) {
+      return 'Écris une vraie phrase ($mots mots minimum)';
+    }
+    return null;
+  }
+
   static String? _texte(
     String? value, {
     required String vide,

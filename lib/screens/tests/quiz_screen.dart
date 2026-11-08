@@ -139,8 +139,7 @@ class _QuizScreenState extends State<QuizScreen> {
         backgroundColor: AppColors.surface,
         title: const Text('Abandonner le test ?'),
         content: const Text(
-          'Ce test comptera comme une tentative échouée '
-          '(${TestService.tentativesMax} au maximum). Le chronomètre '
+          'Ce test comptera comme une tentative échouée. Le chronomètre '
           'continue pendant ce message.',
         ),
         actions: [

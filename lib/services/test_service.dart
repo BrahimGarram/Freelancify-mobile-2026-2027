@@ -6,6 +6,7 @@ import '../database/database_helper.dart';
 import '../models/post_options.dart';
 import '../models/test_competences.dart';
 import '../models/user.dart';
+import '../utils/validators.dart';
 
 class TestException implements Exception {
   final String message;
@@ -92,11 +93,83 @@ class TestService {
         [freelancerId],
       ),
     );
+    // chaque demande acceptée donne droit à une tentative de plus
+    final demandes = Sqflite.firstIntValue(
+      await db.rawQuery(
+        'SELECT COUNT(*) FROM demandes_tentative WHERE freelancer_id = ?',
+        [freelancerId],
+      ),
+    );
     return EtatTests(
       utilisees: n ?? 0,
-      max: tentativesMax,
+      max: tentativesMax + (demandes ?? 0),
       certifie: await estCertifie(freelancerId),
+      demandeFaite: (demandes ?? 0) > 0,
     );
+  }
+
+  /// La demande de tentative supplémentaire du freelancer (ou null)
+  Future<DemandeTentative?> getDemande(int freelancerId) async {
+    final db = await _db.database;
+    final l = await db.query(
+      'demandes_tentative',
+      where: 'freelancer_id = ?',
+      whereArgs: [freelancerId],
+      limit: 1,
+    );
+    return l.isEmpty ? null : DemandeTentative.fromMap(l.first);
+  }
+
+  // ---------- FONCTIONNALITÉ : demander une tentative supplémentaire ----------
+  /// Mêmes contrôles qu'à l'écran. Il n'y a pas d'administrateur dans
+  /// l'application : une demande valide donne droit à la tentative, une
+  /// seule fois. Son statut reste « en cours ».
+  Future<void> demanderTentative({
+    required int freelancerId,
+    required String? motif,
+    required String? precision,
+    required String? explication,
+    required String? revisions,
+    required String? heures,
+    required bool engagement,
+  }) async {
+    final erreur =
+        Validators.choix(DemandeTentative.motifs, 'Choisis un motif')(motif) ??
+        Validators.precisionMotif(precision, motif) ??
+        Validators.explicationDemande(explication) ??
+        Validators.revisionsDemande(revisions) ??
+        Validators.heuresRevision(heures) ??
+        Validators.engagement(engagement);
+    if (erreur != null) throw TestException(erreur);
+
+    final e = await etat(freelancerId);
+    if (e.certifie) {
+      throw const TestException('Tu as déjà réussi le test.');
+    }
+    if (e.demandeFaite) {
+      throw const TestException(
+        'Tu as déjà utilisé ta demande de tentative supplémentaire.',
+      );
+    }
+    if (e.restantes > 0) {
+      throw TestException(
+        'Il te reste encore ${e.restantes} tentative'
+        '${e.restantes > 1 ? 's' : ''} : pas besoin de demande.',
+      );
+    }
+
+    final db = await _db.database;
+    await db.insert('demandes_tentative', {
+      'freelancer_id': freelancerId,
+      'motif': motif,
+      'precision_motif': motif == DemandeTentative.motifAutre
+          ? precision!.trim()
+          : null,
+      'explication': explication!.trim(),
+      'revisions': revisions!.trim(),
+      'heures': int.parse(heures!.trim()),
+      'date_demande': DateTime.now().toIso8601String(),
+    });
   }
 
   // ---------- FONCTIONNALITÉ : générer un quiz de 10 questions ----------
@@ -123,8 +196,8 @@ class TestService {
       );
     }
     if (e.restantes == 0) {
-      throw const TestException(
-        'Tu as utilisé tes $tentativesMax tentatives : tu ne peux plus '
+      throw TestException(
+        'Tu as utilisé tes ${e.max} tentatives : tu ne peux plus '
         'passer le test.',
       );
     }
@@ -397,6 +470,7 @@ class TestService {
       return id;
     });
 
+    final apres = await etat(freelancerId);
     return ResultatTest(
       tentativeId: tentativeId,
       score: score,
@@ -406,7 +480,9 @@ class TestService {
       parDomaine: parDomaine,
       corrections: corrections,
       certification: certification,
-      tentativesRestantes: (await etat(freelancerId)).restantes,
+      tentativesRestantes: apres.restantes,
+      tentativesTotal: apres.max,
+      peutDemanderTentative: apres.peutDemanderTentative,
     );
   }
 
