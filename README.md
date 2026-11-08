@@ -22,7 +22,7 @@ et postulent. Une fois le compte créé, tout fonctionne **hors connexion** ; l'
 ![PDF](https://img.shields.io/badge/Certificat-PDF-EC1C24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
 ![Observer](https://img.shields.io/badge/Design%20Pattern-Observer-F7B93E?style=for-the-badge&logo=databricks&logoColor=black)
 
-![Tests](https://img.shields.io/badge/Tests-137%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
+![Tests](https://img.shields.io/badge/Tests-147%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
 ![Lint](https://img.shields.io/badge/flutter%20analyze-0%20probl%C3%A8me-25F4EE?style=for-the-badge&logo=dart&logoColor=black)
 ![Langue](https://img.shields.io/badge/Interface-Fran%C3%A7ais-EE1D52?style=for-the-badge&logo=googletranslate&logoColor=white)
 
@@ -185,7 +185,7 @@ flowchart TB
         M[Gmail SMTP]
     end
     UI --> SRV
-    SRV <--> DB[(🗄️ SQLite<br/>21 tables · v19)]
+    SRV <--> DB[(🗄️ SQLite<br/>21 tables · v20)]
     SV2 -. rapport .-> G
     UI -. assistant · post .-> G
     SV4 --> M
@@ -236,7 +236,7 @@ classDiagram
 </details>
 
 <details>
-<summary><b>🗄️ Base de données (SQLite, version 19)</b></summary>
+<summary><b>🗄️ Base de données (SQLite, version 20)</b></summary>
 
 <br>
 
@@ -269,7 +269,7 @@ erDiagram
 | `certifications` · `rapports_test` | Certificats délivrés et rapports de l'IA |
 | `emails_sortants` · `codes_reinitialisation` · `verifications_email` | File d'envoi des emails (5 essais) et codes temporaires |
 
-Les **migrations** font passer une ancienne installation à la version 19 **sans perdre de données**.
+Les **migrations** font passer une ancienne installation à la version 20 **sans perdre de données**.
 
 </details>
 
@@ -328,7 +328,7 @@ flutter run
 ## 🧪 Tests
 
 ```bash
-flutter test      # 137 tests
+flutter test      # 147 tests
 flutter analyze   # 0 problème
 ```
 
@@ -352,7 +352,7 @@ Les tests utilisent une **base SQLite en mémoire** et des **faux clients HTTP**
 lib/
 ├── main.dart                 # démarrage : secrets, observateurs, app
 ├── database/
-│   ├── database_helper.dart  # 21 tables, migrations v1 → v19
+│   ├── database_helper.dart  # 21 tables, migrations v1 → v20
 │   └── questions_test.dart   # banque de 140 questions
 ├── models/                   # User, Post, Candidature, Quiz, Certification…
 ├── observer/                 # pattern Observer : Sujet, Observateur, FluxPosts
@@ -368,7 +368,7 @@ lib/
 │   ├── assistant/ · messages/
 │   └── …                     # connexion, inscription, profil, notifications
 ├── theme/ · utils/ · widgets/
-test/                         # 137 tests (unitaires et widgets)
+test/                         # 147 tests (unitaires et widgets)
 assets/config/                # secrets.json (non versionné)
 screenshots/                  # captures d'écran du README
 ```

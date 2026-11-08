@@ -38,6 +38,22 @@ class _FreelancerHomeState extends State<FreelancerHome> {
   void initState() {
     super.initState();
     _rafraichirNonLus();
+    ongletAccueilDemande.addListener(_afficherOngletDemande);
+  }
+
+  @override
+  void dispose() {
+    ongletAccueilDemande.removeListener(_afficherOngletDemande);
+    super.dispose();
+  }
+
+  /// Un écran ouvert par-dessus l'accueil (ex : projets) demande un onglet
+  void _afficherOngletDemande() {
+    final onglet = ongletAccueilDemande.value;
+    if (onglet == null) return;
+    ongletAccueilDemande.value = null;
+    setState(() => _index = onglet);
+    _rafraichirNonLus();
   }
 
   // Bouton "+" → ajouter une réalisation au portfolio

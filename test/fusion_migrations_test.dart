@@ -85,7 +85,7 @@ void main() {
 
   test('nouvelle installation : les deux séries sont là', () async {
     final db = await DatabaseHelper.instance.database;
-    expect(await db.getVersion(), 19);
+    expect(await db.getVersion(), 20);
     expect(await tables(db), containsAll([...tablesTests, ...tablesProjets]));
     expect(
       await colonnes(db, 'users'),
@@ -107,7 +107,7 @@ void main() {
     await db.execute('ALTER TABLE demandes_tentative DROP COLUMN statut');
 
     final apres = await rouvrir(15);
-    expect(await apres.getVersion(), 19);
+    expect(await apres.getVersion(), 20);
     expect(await tables(apres), containsAll(tablesProjets));
     expect(await colonnes(apres, 'users'), contains('cofeecoins_donnes'));
     expect(await colonnes(apres, 'project_tasks'), contains('work_link'));
@@ -129,7 +129,7 @@ void main() {
     expect(await db.query('projects'), isEmpty);
 
     final apres = await rouvrir(18);
-    expect(await apres.getVersion(), 19);
+    expect(await apres.getVersion(), 20);
     expect(await tables(apres), containsAll(tablesTests));
     expect(await colonnes(apres, 'demandes_tentative'), contains('statut'));
     expect(await apres.query('users'), hasLength(2));

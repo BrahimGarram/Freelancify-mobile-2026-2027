@@ -21,6 +21,17 @@ class ProjectTaskService {
     return rows.map(ProjectTask.fromMap).toList();
   }
 
+  /// La tâche [taskId], ou null si elle n'existe plus
+  Future<ProjectTask?> getTask(int taskId) async {
+    final rows = await (await _db.database).query(
+      'project_tasks',
+      where: 'id = ?',
+      whereArgs: [taskId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : ProjectTask.fromMap(rows.first);
+  }
+
   Future<int> createTask({
     required int projectId,
     required int clientId,
@@ -79,6 +90,7 @@ class ProjectTaskService {
       (userId) => AppNotification(
         userId: userId,
         type: AppNotification.typeProjet,
+        taskId: taskId,
         titre: 'Nouvelle tâche',
         contenu:
             'La tâche « ${title.trim()} » a été ajoutée au projet « ${project.first['title']} ».',
@@ -362,6 +374,7 @@ class ProjectTaskService {
         (userId) => AppNotification(
           userId: userId,
           type: AppNotification.typeProjet,
+          taskId: taskId,
           titre: 'Tâche terminée',
           contenu:
               'Le freelancer a soumis le travail pour une tâche de ton projet.',
@@ -412,6 +425,7 @@ class ProjectTaskService {
         (userId) => AppNotification(
           userId: userId,
           type: AppNotification.typeProjet,
+          taskId: taskId,
           titre: accepted ? 'Travail validé' : 'Corrections demandées',
           contenu: accepted
               ? 'La tâche « ${task['title']} » du projet « ${task['project_title']} » a été validée par le client.'

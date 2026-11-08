@@ -7,10 +7,13 @@ import '../observer/observer.dart';
 import '../services/candidature_service.dart';
 import '../services/notification_service.dart';
 import '../services/post_service.dart';
+import '../services/project_service.dart';
+import '../services/project_task_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/home_widgets.dart';
 import 'freelancer/freelancer_home.dart' show ouvrirPostuler;
+import 'project_management_screen.dart';
 
 /// Liste des notifications de l'utilisateur.
 /// OBSERVATEUR du [NotificationService] : la liste se rafraîchit seule.
@@ -59,6 +62,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   // ---------- FONCTIONNALITÉ : ouvrir une notification ----------
   Future<void> _ouvrir(AppNotification n) async {
     await _service.marquerLue(n);
+    if (n.type == AppNotification.typeProjet) return _ouvrirProjet(n);
     if (n.postId == null || !mounted) return;
 
     final post = await PostService().getPostById(n.postId!);
@@ -81,6 +85,35 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       freelancerId: widget.user.id!,
     );
     if (envoye && mounted) showAppMessage(context, 'Candidature envoyée !');
+  }
+
+  /// Notification de projet : ouvre la tâche concernée. Le retour passe par
+  /// la liste des tâches du projet, où se trouvent les actions (soumettre,
+  /// valider). Sans tâche liée : la liste des projets.
+  Future<void> _ouvrirProjet(AppNotification n) async {
+    final navigateur = Navigator.of(context);
+    void ouvrir(Widget ecran) =>
+        navigateur.push(MaterialPageRoute(builder: (_) => ecran));
+
+    if (n.taskId == null) {
+      if (mounted) ouvrir(ProjectManagementScreen(user: widget.user));
+      return;
+    }
+    final tache = await ProjectTaskService().getTask(n.taskId!);
+    final projets = await ProjectService().getProjectsForUser(widget.user.id!);
+    if (!mounted) return;
+    final projet = projets.where((p) => p.id == tache?.projectId).firstOrNull;
+    if (tache == null || projet == null) {
+      showAppMessage(context, "Cette tâche n'existe plus.", error: true);
+      return;
+    }
+    ouvrir(ProjectTasksScreen(project: projet, user: widget.user));
+    ouvrir(
+      TaskDetailsScreen(
+        task: tache,
+        isClient: projet.clientId == widget.user.id,
+      ),
+    );
   }
 
   @override

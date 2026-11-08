@@ -31,6 +31,22 @@ class _ClientHomeState extends State<ClientHome> {
   void initState() {
     super.initState();
     _rafraichirNonLus();
+    ongletAccueilDemande.addListener(_afficherOngletDemande);
+  }
+
+  @override
+  void dispose() {
+    ongletAccueilDemande.removeListener(_afficherOngletDemande);
+    super.dispose();
+  }
+
+  /// Un écran ouvert par-dessus l'accueil (ex : projets) demande un onglet
+  void _afficherOngletDemande() {
+    final onglet = ongletAccueilDemande.value;
+    if (onglet == null) return;
+    ongletAccueilDemande.value = null;
+    setState(() => _index = onglet);
+    _rafraichirNonLus();
   }
 
   Future<void> _rafraichirNonLus() async {

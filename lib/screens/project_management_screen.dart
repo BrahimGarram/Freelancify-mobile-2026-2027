@@ -11,7 +11,6 @@ import '../services/project_task_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/home_widgets.dart';
-import 'messages/messages_tab.dart';
 import 'client/publier_post.dart';
 import 'freelancer/publier_realisation.dart';
 
@@ -75,35 +74,10 @@ class _ProjectManagementScreenState extends State<ProjectManagementScreen> {
         shadowColor: Colors.transparent,
         scrolledUnderElevation: 0,
       ),
-      bottomNavigationBar: AppBottomNav(
-        items: _isClient
-            ? const [
-                NavItem(Icons.work_outline_rounded, 'Mes posts'),
-                NavItem(Icons.people_outline_rounded, 'Candidatures'),
-                NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
-                NavItem(Icons.person_outline_rounded, 'Profil'),
-              ]
-            : const [
-                NavItem(Icons.home_outlined, 'Missions'),
-                NavItem(Icons.send_outlined, 'Candidatures'),
-                NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
-                NavItem(Icons.person_outline_rounded, 'Profil'),
-              ],
-        currentIndex: 3,
-        onTap: (index) async {
-          if (index == 3) return;
-          if (index == 2) {
-            await Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => MessagesTab(user: widget.user)),
-            );
-            _rafraichirNonLus();
-            return;
-          }
-          if (mounted) Navigator.of(context).pop();
-        },
-        badges: {2: _nonLus},
+      bottomNavigationBar: _ProjetBottomNav(
+        isClient: _isClient,
+        nonLus: _nonLus,
         onPlus: _ouvrirActionPrincipale,
-        plusPosition: 2,
       ),
       body: Stack(
         children: [
@@ -178,6 +152,44 @@ class _ProjectManagementScreenState extends State<ProjectManagementScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Barre du bas des écrans de projet : chaque bouton ramène à l'accueil,
+/// sur le bon onglet, quel que soit le nombre d'écrans ouverts.
+class _ProjetBottomNav extends StatelessWidget {
+  final bool isClient;
+  final int nonLus;
+  final VoidCallback onPlus;
+
+  const _ProjetBottomNav({
+    required this.isClient,
+    required this.nonLus,
+    required this.onPlus,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppBottomNav(
+      items: isClient
+          ? const [
+              NavItem(Icons.work_outline_rounded, 'Mes posts'),
+              NavItem(Icons.people_outline_rounded, 'Candidatures'),
+              NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
+              NavItem(Icons.person_outline_rounded, 'Profil'),
+            ]
+          : const [
+              NavItem(Icons.home_outlined, 'Missions'),
+              NavItem(Icons.send_outlined, 'Candidatures'),
+              NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
+              NavItem(Icons.person_outline_rounded, 'Profil'),
+            ],
+      currentIndex: 3,
+      onTap: (onglet) => ouvrirOngletAccueil(context, onglet),
+      badges: {2: nonLus},
+      onPlus: onPlus,
+      plusPosition: 2,
     );
   }
 }
@@ -548,35 +560,10 @@ class _ProjectProgressScreenState extends State<ProjectProgressScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Progression du projet')),
-    bottomNavigationBar: AppBottomNav(
-      items: _isClient
-          ? const [
-              NavItem(Icons.work_outline_rounded, 'Mes posts'),
-              NavItem(Icons.people_outline_rounded, 'Candidatures'),
-              NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
-              NavItem(Icons.person_outline_rounded, 'Profil'),
-            ]
-          : const [
-              NavItem(Icons.home_outlined, 'Missions'),
-              NavItem(Icons.send_outlined, 'Candidatures'),
-              NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
-              NavItem(Icons.person_outline_rounded, 'Profil'),
-            ],
-      currentIndex: 3,
-      onTap: (index) async {
-        if (index == 3) return;
-        if (index == 2) {
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => MessagesTab(user: widget.user)),
-          );
-          _rafraichirNonLus();
-          return;
-        }
-        if (mounted) Navigator.of(context).pop();
-      },
-      badges: {2: _nonLus},
+    bottomNavigationBar: _ProjetBottomNav(
+      isClient: _isClient,
+      nonLus: _nonLus,
       onPlus: _ouvrirActionPrincipale,
-      plusPosition: 2,
     ),
     body: FutureBuilder<List<ProjectTask>>(
       future: _tasks,
@@ -844,35 +831,10 @@ class _ProjectTasksScreenState extends State<ProjectTasksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(widget.project.title)),
-      bottomNavigationBar: AppBottomNav(
-        items: _isClient
-            ? const [
-                NavItem(Icons.work_outline_rounded, 'Mes posts'),
-                NavItem(Icons.people_outline_rounded, 'Candidatures'),
-                NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
-                NavItem(Icons.person_outline_rounded, 'Profil'),
-              ]
-            : const [
-                NavItem(Icons.home_outlined, 'Missions'),
-                NavItem(Icons.send_outlined, 'Candidatures'),
-                NavItem(Icons.chat_bubble_outline_rounded, 'Messages'),
-                NavItem(Icons.person_outline_rounded, 'Profil'),
-              ],
-        currentIndex: 3,
-        onTap: (index) async {
-          if (index == 3) return;
-          if (index == 2) {
-            await Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => MessagesTab(user: widget.user)),
-            );
-            _rafraichirNonLus();
-            return;
-          }
-          if (mounted) Navigator.of(context).pop();
-        },
-        badges: {2: _nonLus},
+      bottomNavigationBar: _ProjetBottomNav(
+        isClient: _isClient,
+        nonLus: _nonLus,
         onPlus: _ouvrirActionPrincipale,
-        plusPosition: 2,
       ),
       floatingActionButton: _isClient && widget.project.status != 'termine'
           ? FloatingActionButton.extended(

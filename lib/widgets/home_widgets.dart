@@ -551,6 +551,15 @@ class PlaceholderTab extends StatelessWidget {
 
 // ======================= Barre de navigation du bas =======================
 
+/// Onglet demandé à l'accueil depuis un écran ouvert par-dessus lui
+final ongletAccueilDemande = ValueNotifier<int?>(null);
+
+/// Ferme tous les écrans ouverts au-dessus de l'accueil et affiche [onglet]
+void ouvrirOngletAccueil(BuildContext context, int onglet) {
+  ongletAccueilDemande.value = onglet;
+  Navigator.of(context).popUntil((route) => route.isFirst);
+}
+
 class NavItem {
   final IconData icon;
   final String label;
