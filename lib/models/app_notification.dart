@@ -1,6 +1,7 @@
 /// Une notification affichée dans l'application (cloche 🔔)
 class AppNotification {
   static const typeNouveauPost = 'nouveau_post';
+  static const typeProjet = 'projet';
 
   final int? id;
   final int userId; // destinataire

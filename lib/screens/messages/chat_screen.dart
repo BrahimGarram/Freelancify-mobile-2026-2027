@@ -201,6 +201,29 @@ class _ChatScreenState extends State<ChatScreen> {
                         color: AppColors.textSecondary,
                       ),
                     ),
+                    if (_suisClient)
+                      Tooltip(
+                        message: 'CofeeCoins du freelancer',
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.local_cafe_outlined,
+                              size: 13,
+                              color: AppColors.cyan,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              '${_conv.freelancerCofeeCoins}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.cyan,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),

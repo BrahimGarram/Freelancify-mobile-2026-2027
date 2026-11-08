@@ -141,6 +141,47 @@ class CandidatureService {
         where: 'id = ?',
         whereArgs: [postId],
       );
+
+      final post = (await txn.query(
+        'posts',
+        columns: ['client_id', 'titre', 'description', 'date_limite'],
+        where: 'id = ?',
+        whereArgs: [postId],
+        limit: 1,
+      )).first;
+      final candidature = (await txn.query(
+        'candidatures',
+        columns: ['freelancer_id', 'date_candidature'],
+        where: 'id = ?',
+        whereArgs: [candidatureId],
+        limit: 1,
+      )).first;
+      final now = DateTime.now().toIso8601String();
+      final existingProject = await txn.query(
+        'projects',
+        columns: ['id'],
+        where: 'candidature_id = ?',
+        whereArgs: [candidatureId],
+        limit: 1,
+      );
+      if (existingProject.isEmpty) {
+        await txn.insert('projects', {
+          'candidature_id': candidatureId,
+          'post_id': postId,
+          'client_id': post['client_id'],
+          'freelancer_id': candidature['freelancer_id'],
+          'title': post['titre'],
+          'description': post['description'],
+          'deadline': post['date_limite'],
+          'status': 'en_cours',
+          'created_at': candidature['date_candidature'] ?? now,
+          'updated_at': now,
+        });
+        await txn.rawUpdate(
+          'UPDATE users SET cofeecoins = cofeecoins + 1 WHERE id = ?',
+          [post['client_id']],
+        );
+      }
     });
   }
 

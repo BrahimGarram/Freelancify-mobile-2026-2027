@@ -12,10 +12,12 @@ import 'assistant/assistant_screen.dart';
 import 'freelancer/clients_suivis.dart';
 import 'tests/tests_screen.dart';
 import '../services/test_service.dart';
+import '../services/user_service.dart';
 import 'freelancer/publier_realisation.dart';
 import 'login.dart';
 import 'modifier_profil.dart';
 import 'profil_freelancer.dart';
+import 'project_management_screen.dart';
 
 /// Onglet Profil (commun au Client et au Freelancer) :
 /// carte d'identité, statistiques, profil à compléter (freelancer),
@@ -39,8 +41,9 @@ class _ProfilTabState extends State<ProfilTab> {
   List<_Stat>? _stats;
   int _nbRealisations = 0;
   List<String> _domaines = const []; // fixés au 1er test
+  User? _loadedUser;
 
-  User get _user => widget.user;
+  User get _user => _loadedUser ?? widget.user;
   bool get _isClient => _user.role == 'client';
 
   @override
@@ -58,6 +61,10 @@ class _ProfilTabState extends State<ProfilTab> {
   // ---------- FONCTIONNALITÉ : statistiques ----------
   Future<void> _chargerStats() async {
     try {
+      final refreshedUser = await UserService().getUserById(widget.user.id!);
+      if (refreshedUser != null && mounted) {
+        setState(() => _loadedUser = refreshedUser);
+      }
       final List<_Stat> stats;
       if (_isClient) {
         final posts = await PostService().getPostsByClient(_user.id!);
@@ -194,7 +201,7 @@ class _ProfilTabState extends State<ProfilTab> {
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
           children: [
-            const Text(
+            Text(
               'Profil',
               style: TextStyle(
                 fontSize: 28,
@@ -218,6 +225,16 @@ class _ProfilTabState extends State<ProfilTab> {
                       ? 'Nom, email et mot de passe'
                       : 'Nom, email, métier, bio, mot de passe',
                   onTap: _modifier,
+                ),
+                _Ligne(
+                  icone: Icons.folder_shared_outlined,
+                  titre: 'Gestion des projets',
+                  sousTitre: 'Suivre les projets acceptés',
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProjectManagementScreen(user: _user),
+                    ),
+                  ),
                 ),
                 if (!_isClient) ...[
                   _Ligne(
@@ -391,6 +408,42 @@ class _ProfilTabState extends State<ProfilTab> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 14),
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.fieldFill,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.fieldBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.local_cafe_rounded,
+                    color: AppColors.cyan,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _isClient ? 'CofeeCoins donnés' : 'Total CofeeCoins',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  Text(
+                    '${_isClient ? _user.cofeecoinsDonnes : _user.cofeecoins}',
+                    style: const TextStyle(
+                      color: AppColors.cyan,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
           if (!_isClient && _domaines.isNotEmpty) ...[
             const SizedBox(height: 14),

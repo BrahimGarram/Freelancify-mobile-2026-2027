@@ -186,6 +186,31 @@ class _ConversationTile extends StatelessWidget {
                           color: AppColors.cyan,
                         ),
                       ),
+                      if (moi == c.clientId) ...[
+                        const SizedBox(height: 4),
+                        Tooltip(
+                          message: 'CofeeCoins du freelancer',
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.local_cafe_outlined,
+                                size: 14,
+                                color: AppColors.cyan,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${c.freelancerCofeeCoins}',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.cyan,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 4),
                       Row(
                         children: [

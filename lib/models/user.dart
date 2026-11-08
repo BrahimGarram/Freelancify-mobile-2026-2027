@@ -12,6 +12,8 @@ class User {
   /// Domaines choisis au 1er test de compétences (ex : ['dev', 'design']).
   /// Fixés une fois pour toutes : écrits seulement par TestService.
   final List<String> domaines;
+  final int cofeecoins;
+  final int cofeecoinsDonnes;
 
   User({
     this.id,
@@ -22,6 +24,8 @@ class User {
     this.metier,
     this.bio,
     this.domaines = const [],
+    this.cofeecoins = 0,
+    this.cofeecoinsDonnes = 0,
   });
 
   bool get isFreelancer => role == 'freelancer';
@@ -36,6 +40,8 @@ class User {
       'role': role,
       'metier': metier,
       'bio': bio,
+      'cofeecoins': cofeecoins,
+      'cofeecoins_donnes': cofeecoinsDonnes,
     };
   }
 
@@ -50,6 +56,8 @@ class User {
       metier: map['metier'] as String?,
       bio: map['bio'] as String?,
       domaines: lireDomaines(map['domaines'] as String?),
+      cofeecoins: (map['cofeecoins'] as num?)?.toInt() ?? 0,
+      cofeecoinsDonnes: (map['cofeecoins_donnes'] as num?)?.toInt() ?? 0,
     );
   }
 

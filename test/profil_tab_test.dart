@@ -80,6 +80,8 @@ void main() {
     expect(find.text('Mon profil public'), findsNothing);
 
     await tester.scrollUntilVisible(find.text('Se déconnecter'), 200);
+    await tester.ensureVisible(find.text('Se déconnecter'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Se déconnecter'));
     await tester.pumpAndSettle();
     expect(find.text('Se déconnecter ?'), findsOneWidget);
