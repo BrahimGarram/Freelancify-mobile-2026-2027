@@ -262,6 +262,7 @@ void main() {
 
       expect(find.text('Mon profil public'), findsOneWidget);
       expect(find.text('Ajouter'), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('Aucune réalisation'), 200);
       expect(find.text('Aucune réalisation'), findsOneWidget);
     });
 

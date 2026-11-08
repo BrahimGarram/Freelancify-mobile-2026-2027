@@ -88,6 +88,11 @@ Pas encore de recherche ni de filtres dans le fil.
   60 s selon sa longueur). Temps écoulé : la question compte comme fausse et
   on passe à la suivante. Pas de retour aux questions précédentes.
 - Résultat immédiat : score, détail par domaine et correction.
+- Après 3 tentatives échouées : bouton « Demander une tentative » (espace des
+  tests ou écran du résultat). Formulaire : motif, explication, ce qui a été
+  révisé, heures de révision, engagement à cocher. Une seule demande possible :
+  si le formulaire est valide, elle donne 1 tentative de plus. Elle apparaît
+  sous l'Historique, avec le statut « En cours » et un bouton Afficher / Masquer.
 - 3 tentatives au maximum ; un test commencé compte, même abandonné. Une
   fois le test réussi, il ne se repasse pas.
 - « Rapport de l'IA » après chaque test (Internet nécessaire) : synthèse,

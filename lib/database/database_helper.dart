@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 
 import 'questions_test.dart';
 
@@ -29,7 +30,9 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB() async {
-    final path = overridePath ?? join(await getDatabasesPath(), 'app.db');
+    final path =
+        overridePath ??
+        (kIsWeb ? 'freelancify.db' : join(await getDatabasesPath(), 'app.db'));
 
     return await openDatabase(
       path,
@@ -47,10 +50,15 @@ class DatabaseHelper {
       //              du freelancer, réponse vide si le temps est écoulé.
       // Version 12 : 3 tentatives max (une tentative compte dès le début du
       //              test) et rapports de l'IA après chaque test.
-      // Version 13 : codes de vérification de l'email à l'inscription.
+      // Versions 13 à 18 : deux séries développées en parallèle, avec les
+      // mêmes numéros pour des changements différents :
+      //  - tests : vérification de l'email, demandes de tentative et statut ;
+      //  - projets : projets, tâches, soumission du travail, CofeeCoins.
+      // Version 19 : réunit les deux séries (voir _reunirSeries13a18).
+      // Version 20 : une notification peut pointer vers une tâche de projet.
       // Si l'app était déjà installée, onUpgrade met la base à jour
       // sans effacer tes utilisateurs.
-      version: 13,
+      version: 20,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -74,6 +82,8 @@ class DatabaseHelper {
     await _createAbonnementsEtNotifications(db);
     await _createTestsEtCertifications(db);
     await _createVerificationsEmail(db);
+    await _createDemandesTentative(db);
+    await _createProjetsEtTaches(db);
   }
 
   // App déjà installée avec une ancienne version
@@ -136,8 +146,123 @@ class DatabaseHelper {
       }
       await _createRapportsTest(db);
     }
-    if (oldVersion < 13) {
-      await _createVerificationsEmail(db);
+    if (oldVersion < 19) {
+      await _reunirSeries13a18(db);
+    }
+    if (oldVersion < 20 &&
+        await _tableExiste(db, 'notifications') &&
+        !await _colonneExiste(db, 'notifications', 'task_id')) {
+      await db.execute('ALTER TABLE notifications ADD COLUMN task_id INTEGER');
+    }
+  }
+
+  /// Une base « v13 à v18 » peut venir de l'une ou l'autre série : son numéro
+  /// ne dit donc pas ce qu'elle contient. Chaque étape vérifie ce qui existe
+  /// et n'ajoute que ce qui manque, sans perdre de données.
+  Future<void> _reunirSeries13a18(Database db) async {
+    // série « tests »
+    await _createVerificationsEmail(db);
+    await _createDemandesTentative(db);
+    if (!await _colonneExiste(db, 'demandes_tentative', 'statut')) {
+      await db.execute(
+        "ALTER TABLE demandes_tentative ADD COLUMN statut TEXT NOT NULL "
+        "DEFAULT 'en_cours'",
+      );
+    }
+
+    // série « projets »
+    final projetsDejaLa = await _tableExiste(db, 'projects');
+    await _createProjetsEtTaches(db);
+    if (!projetsDejaLa &&
+        await _tableExiste(db, 'candidatures') &&
+        await _colonneExiste(db, 'posts', 'date_limite')) {
+      // 1re fois seulement : un projet supprimé ensuite ne revient pas
+      await db.execute('''
+        INSERT INTO projects (
+          candidature_id, post_id, client_id, freelancer_id, title,
+          description, deadline, status, created_at, updated_at
+        )
+        SELECT c.id, p.id, p.client_id, c.freelancer_id, p.titre,
+               p.description, p.date_limite, 'en_cours',
+               c.date_candidature, c.date_candidature
+        FROM candidatures c
+        JOIN posts p ON p.id = c.post_id
+        WHERE c.statut = 'acceptee'
+      ''');
+    }
+    for (final column in {
+      'drive_url': 'TEXT',
+      'github_url': 'TEXT',
+      'attachment_name': 'TEXT',
+      'attachment_mime': 'TEXT',
+      'attachment_bytes': 'BLOB',
+    }.entries) {
+      if (!await _colonneExiste(db, 'project_tasks', column.key)) {
+        await db.execute(
+          'ALTER TABLE project_tasks ADD COLUMN ${column.key} ${column.value}',
+        );
+      }
+    }
+    await _ajouterColonnesSoumission(db);
+    await _ajouterCofeeCoins(db);
+    await _ajouterCofeeCoinsDonnes(db);
+  }
+
+  Future<bool> _tableExiste(Database db, String table) async {
+    final l = await db.query(
+      'sqlite_master',
+      columns: ['name'],
+      where: "type = 'table' AND name = ?",
+      whereArgs: [table],
+    );
+    return l.isNotEmpty;
+  }
+
+  Future<void> _ajouterColonnesSoumission(Database db) async {
+    for (final column in {
+      'work_description': 'TEXT',
+      'work_link': 'TEXT',
+      'work_attachment_name': 'TEXT',
+      'work_attachment_mime': 'TEXT',
+      'work_attachment_bytes': 'BLOB',
+      'review_note': 'TEXT',
+      'reviewed_at': 'TEXT',
+    }.entries) {
+      if (!await _colonneExiste(db, 'project_tasks', column.key)) {
+        await db.execute(
+          'ALTER TABLE project_tasks ADD COLUMN ${column.key} ${column.value}',
+        );
+      }
+    }
+  }
+
+  Future<void> _ajouterCofeeCoins(Database db) async {
+    if (!await _colonneExiste(db, 'users', 'cofeecoins')) {
+      await db.execute(
+        "ALTER TABLE users ADD COLUMN cofeecoins INTEGER NOT NULL DEFAULT 0",
+      );
+    }
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_rewards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL UNIQUE,
+        client_id INTEGER NOT NULL,
+        freelancer_id INTEGER NOT NULL,
+        coins INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
+  Future<void> _ajouterCofeeCoinsDonnes(Database db) async {
+    if (!await _colonneExiste(db, 'users', 'cofeecoins_donnes')) {
+      await db.execute(
+        "ALTER TABLE users ADD COLUMN cofeecoins_donnes INTEGER NOT NULL DEFAULT 0",
+      );
     }
   }
 
@@ -196,7 +321,9 @@ class DatabaseHelper {
         role TEXT NOT NULL CHECK (role IN ('freelancer', 'client')),
         metier TEXT,
         bio TEXT,
-        domaines TEXT
+        domaines TEXT,
+        cofeecoins INTEGER NOT NULL DEFAULT 0,
+        cofeecoins_donnes INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
@@ -302,6 +429,25 @@ class DatabaseHelper {
 
   /// Codes à 6 chiffres envoyés par email pour réinitialiser un mot de
   /// passe. Le code n'est jamais stocké en clair (seulement son hash).
+  /// Formulaire rempli après 3 échecs. UNIQUE : une seule demande par
+  /// freelancer ; chaque ligne donne droit à une tentative de plus.
+  Future<void> _createDemandesTentative(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS demandes_tentative (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        freelancer_id INTEGER NOT NULL UNIQUE,
+        motif TEXT NOT NULL,
+        precision_motif TEXT,
+        explication TEXT NOT NULL,
+        revisions TEXT NOT NULL,
+        heures INTEGER NOT NULL CHECK (heures BETWEEN 1 AND 200),
+        date_demande TEXT NOT NULL,
+        statut TEXT NOT NULL DEFAULT 'en_cours',
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
   /// Inscription en attente : le code envoyé à une adresse (une ligne par
   /// adresse). Le compte n'est créé dans `users` qu'une fois le code validé.
   Future<void> _createVerificationsEmail(Database db) async {
@@ -357,6 +503,7 @@ class DatabaseHelper {
         titre TEXT NOT NULL,
         contenu TEXT NOT NULL,
         post_id INTEGER,
+        task_id INTEGER,
         acteur_id INTEGER,
         lu INTEGER NOT NULL DEFAULT 0 CHECK (lu IN (0, 1)),
         date_creation TEXT NOT NULL,
@@ -461,6 +608,125 @@ class DatabaseHelper {
           ON DELETE CASCADE
       )
     ''');
+  }
+
+  /// Projets de suivi créés lorsqu'une candidature est acceptée.
+  Future<void> _createProjetsEtTaches(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        candidature_id INTEGER NOT NULL UNIQUE,
+        post_id INTEGER NOT NULL,
+        client_id INTEGER NOT NULL,
+        freelancer_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        deadline TEXT,
+        status TEXT NOT NULL DEFAULT 'en_cours'
+          CHECK (status IN ('en_cours', 'en_pause', 'termine', 'annule')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (candidature_id) REFERENCES candidatures(id)
+          ON DELETE CASCADE,
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_projects_client '
+      'ON projects (client_id, status, id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_projects_freelancer '
+      'ON projects (freelancer_id, status, id)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_rewards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL UNIQUE,
+        client_id INTEGER NOT NULL,
+        freelancer_id INTEGER NOT NULL,
+        coins INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        priority TEXT NOT NULL DEFAULT 'normale'
+          CHECK (priority IN ('basse', 'normale', 'haute', 'urgente')),
+        status TEXT NOT NULL DEFAULT 'a_faire'
+          CHECK (status IN ('a_faire', 'en_cours', 'a_valider', 'validee', 'refusee')),
+        due_date TEXT,
+        drive_url TEXT,
+        github_url TEXT,
+        attachment_name TEXT,
+        attachment_mime TEXT,
+        attachment_bytes BLOB,
+        work_description TEXT,
+        work_link TEXT,
+        work_attachment_name TEXT,
+        work_attachment_mime TEXT,
+        work_attachment_bytes BLOB,
+        rejection_reason TEXT,
+        review_note TEXT,
+        reviewed_at TEXT,
+        created_by INTEGER NOT NULL,
+        assigned_to INTEGER NOT NULL,
+        validated_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_project_tasks_project '
+      'ON project_tasks (project_id, status, priority, id)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        task_id INTEGER,
+        author_id INTEGER NOT NULL,
+        content TEXT NOT NULL CHECK (length(trim(content)) BETWEEN 1 AND 2000),
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (task_id) REFERENCES project_tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_project_comments_project '
+      'ON project_comments (project_id, id)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_activity (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        task_id INTEGER,
+        actor_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        details TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (task_id) REFERENCES project_tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_project_activity_project '
+      'ON project_activity (project_id, id)',
+    );
   }
 
   /// Migration v11 (sans perdre les tests déjà passés)

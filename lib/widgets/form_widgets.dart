@@ -60,6 +60,67 @@ class _ErrorText extends StatelessWidget {
   }
 }
 
+/// Case à cocher avec contrôle de saisie (ex : engagement à accepter)
+class CaseACocherField extends FormField<bool> {
+  CaseACocherField({
+    super.key,
+    required String texte,
+    super.validator,
+    ValueChanged<bool>? onChanged,
+  }) : super(
+         initialValue: false,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
+         builder: (state) {
+           void basculer() {
+             final v = !(state.value ?? false);
+             state.didChange(v);
+             onChanged?.call(v);
+           }
+
+           return Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               InkWell(
+                 borderRadius: BorderRadius.circular(12),
+                 onTap: basculer,
+                 child: Row(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     Checkbox(
+                       value: state.value ?? false,
+                       activeColor: AppColors.cyan,
+                       checkColor: Colors.black,
+                       side: BorderSide(
+                         color: state.hasError
+                             ? AppColors.error
+                             : AppColors.textMuted,
+                         width: 1.5,
+                       ),
+                       onChanged: (_) => basculer(),
+                     ),
+                     Expanded(
+                       child: Padding(
+                         padding: const EdgeInsets.only(top: 12, right: 4),
+                         child: Text(
+                           texte,
+                           style: const TextStyle(
+                             fontSize: 13,
+                             height: 1.4,
+                             color: AppColors.label,
+                           ),
+                         ),
+                       ),
+                     ),
+                   ],
+                 ),
+               ),
+               _ErrorText(state.errorText),
+             ],
+           );
+         },
+       );
+}
+
 // ============================ Choix en puces ============================
 
 /// Un choix unique parmi des puces (catégorie, type de budget, mode…)
@@ -217,12 +278,16 @@ class _Puce extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                 ],
-                Text(
-                  texte,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: selected ? AppColors.cyan : AppColors.textPrimary,
+                Flexible(
+                  child: Text(
+                    texte,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: selected ? AppColors.cyan : AppColors.textPrimary,
+                    ),
                   ),
                 ),
               ],

@@ -1,6 +1,7 @@
 /// Une notification affichée dans l'application (cloche 🔔)
 class AppNotification {
   static const typeNouveauPost = 'nouveau_post';
+  static const typeProjet = 'projet';
 
   final int? id;
   final int userId; // destinataire
@@ -8,6 +9,7 @@ class AppNotification {
   final String titre;
   final String contenu;
   final int? postId;
+  final int? taskId; // tâche de projet concernée
   final int? acteurId; // qui l'a provoquée (ex : le client)
   final bool lu;
   final String dateCreation;
@@ -22,6 +24,7 @@ class AppNotification {
     required this.titre,
     required this.contenu,
     this.postId,
+    this.taskId,
     this.acteurId,
     this.lu = false,
     required this.dateCreation,
@@ -34,6 +37,7 @@ class AppNotification {
     'titre': titre,
     'contenu': contenu,
     'post_id': postId,
+    'task_id': taskId,
     'acteur_id': acteurId,
     'lu': lu ? 1 : 0,
     'date_creation': dateCreation,
@@ -46,6 +50,7 @@ class AppNotification {
     titre: m['titre'] as String,
     contenu: m['contenu'] as String,
     postId: m['post_id'] as int?,
+    taskId: m['task_id'] as int?,
     acteurId: m['acteur_id'] as int?,
     lu: (m['lu'] as int) == 1,
     dateCreation: m['date_creation'] as String,

@@ -90,6 +90,17 @@ void main() {
       );
       expect((await posts.getPostsByClient(client)).single.statut, 'en_cours');
       expect(await posts.getPostsOuverts(), isEmpty);
+
+      final db = await DatabaseHelper.instance.database;
+      final projects = await db.query(
+        'projects',
+        where: 'candidature_id = ?',
+        whereArgs: [c1],
+      );
+      expect(projects, hasLength(1));
+      expect(projects.single['client_id'], client);
+      expect(projects.single['freelancer_id'], f1);
+      expect(projects.single['status'], 'en_cours');
     },
   );
 

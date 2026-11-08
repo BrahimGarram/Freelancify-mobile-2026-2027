@@ -22,6 +22,51 @@ class QuestionQuiz {
   int indexOrigine(int affiche) => ordre[affiche];
 }
 
+/// Demande de tentative supplémentaire, remplie après 3 échecs
+class DemandeTentative {
+  final String motif;
+  final String? precision; // si le motif est « Autre »
+  final String explication;
+  final String revisions;
+  final int heures;
+  final String statut;
+  final String date;
+
+  const DemandeTentative({
+    required this.motif,
+    this.precision,
+    required this.explication,
+    required this.revisions,
+    required this.heures,
+    this.statut = 'en_cours',
+    required this.date,
+  });
+
+  factory DemandeTentative.fromMap(Map<String, dynamic> m) => DemandeTentative(
+    motif: m['motif'] as String,
+    precision: m['precision_motif'] as String?,
+    explication: m['explication'] as String,
+    revisions: m['revisions'] as String,
+    heures: m['heures'] as int,
+    statut: m['statut'] as String,
+    date: m['date_demande'] as String,
+  );
+
+  String get motifLisible => motifs[motif] ?? motif;
+  String get statutLisible => statuts[statut] ?? statut;
+
+  static const statuts = {'en_cours': 'En cours'};
+
+  static const motifAutre = 'autre';
+  static const motifs = {
+    'temps': 'Manque de temps',
+    'technique': 'Problème technique',
+    'comprehension': 'Questions mal comprises',
+    'revision': 'Pas assez révisé',
+    motifAutre: 'Autre',
+  };
+}
+
 class Quiz {
   final int tentativeId; // la tentative est comptée dès le début du test
   final List<String> domaines;
@@ -38,16 +83,22 @@ class EtatTests {
   final int utilisees;
   final int max;
   final bool certifie;
+  final bool demandeFaite; // tentative supplémentaire déjà demandée
   const EtatTests({
     required this.utilisees,
     required this.max,
     required this.certifie,
+    this.demandeFaite = false,
   });
 
   int get restantes => (max - utilisees).clamp(0, max);
 
   /// Un test réussi ne se repasse pas ; au-delà de [max] essais, c'est fini
   bool get peutPasser => !certifie && restantes > 0;
+
+  /// Toutes les tentatives échouées, et la demande pas encore utilisée
+  bool get peutDemanderTentative =>
+      !certifie && restantes == 0 && !demandeFaite;
 }
 
 /// Rapport de l'IA après un test : court, concret, personnel
@@ -94,6 +145,8 @@ class ResultatTest {
   final List<CorrectionQuestion> corrections;
   final Certification? certification; // si réussi
   final int tentativesRestantes;
+  final int tentativesTotal;
+  final bool peutDemanderTentative;
 
   const ResultatTest({
     required this.tentativeId,
@@ -105,6 +158,8 @@ class ResultatTest {
     required this.corrections,
     this.certification,
     this.tentativesRestantes = 0,
+    this.tentativesTotal = 3,
+    this.peutDemanderTentative = false,
   });
 }
 

@@ -38,6 +38,22 @@ class _FreelancerHomeState extends State<FreelancerHome> {
   void initState() {
     super.initState();
     _rafraichirNonLus();
+    ongletAccueilDemande.addListener(_afficherOngletDemande);
+  }
+
+  @override
+  void dispose() {
+    ongletAccueilDemande.removeListener(_afficherOngletDemande);
+    super.dispose();
+  }
+
+  /// Un écran ouvert par-dessus l'accueil (ex : projets) demande un onglet
+  void _afficherOngletDemande() {
+    final onglet = ongletAccueilDemande.value;
+    if (onglet == null) return;
+    ongletAccueilDemande.value = null;
+    setState(() => _index = onglet);
+    _rafraichirNonLus();
   }
 
   // Bouton "+" → ajouter une réalisation au portfolio
@@ -520,7 +536,10 @@ Future<bool> ouvrirPostuler(
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (_) => TestRequisSheet(restantes: etat.restantes),
+      builder: (_) => TestRequisSheet(
+        restantes: etat.restantes,
+        peutDemander: etat.peutDemanderTentative,
+      ),
     );
     if (passer != true || !context.mounted) return false;
     final user = await UserService().getUserById(freelancerId);
@@ -547,7 +566,12 @@ Future<bool> ouvrirPostuler(
 /// Panneau affiché quand un freelancer non certifié veut postuler
 class TestRequisSheet extends StatelessWidget {
   final int restantes; // tentatives restantes (0 : plus de test possible)
-  const TestRequisSheet({super.key, required this.restantes});
+  final bool peutDemander; // après 3 échecs : formulaire de demande
+  const TestRequisSheet({
+    super.key,
+    required this.restantes,
+    this.peutDemander = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -585,9 +609,12 @@ class TestRequisSheet extends StatelessWidget {
                         'chronométrées, au moins ${TestService.seuilReussite} '
                         '% de bonnes réponses. Il te reste $restantes '
                         'tentative${restantes > 1 ? 's' : ''}.'
-                  : 'Tu as utilisé tes ${TestService.tentativesMax} '
-                        'tentatives sans obtenir la certification : tu ne '
-                        'peux pas postuler aux missions.',
+                  : peutDemander
+                  ? 'Tu as utilisé tes tentatives sans obtenir la '
+                        'certification. Tu peux demander une tentative '
+                        'supplémentaire depuis l\'espace des tests.'
+                  : 'Tu as utilisé toutes tes tentatives sans obtenir la '
+                        'certification : tu ne peux pas postuler aux missions.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -596,9 +623,9 @@ class TestRequisSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
-            if (restantes > 0) ...[
+            if (restantes > 0 || peutDemander) ...[
               PrimaryButton(
-                label: 'Passer le test',
+                label: restantes > 0 ? 'Passer le test' : 'Voir mes tests',
                 onPressed: () => Navigator.of(context).pop(true),
               ),
               const SizedBox(height: 6),
@@ -608,7 +635,9 @@ class TestRequisSheet extends StatelessWidget {
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
               ),
-              child: Text(restantes > 0 ? 'Plus tard' : 'Fermer'),
+              child: Text(
+                restantes > 0 || peutDemander ? 'Plus tard' : 'Fermer',
+              ),
             ),
           ],
         ),

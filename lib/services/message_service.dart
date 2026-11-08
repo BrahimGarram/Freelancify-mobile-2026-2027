@@ -10,6 +10,7 @@ class MessageService {
     SELECT c.id AS candidature_id, c.post_id, c.statut, c.freelancer_id,
            p.titre AS post_titre, p.client_id,
            uf.username AS freelancer_username,
+           uf.cofeecoins AS freelancer_cofeecoins,
            uc.username AS client_username,
            m.contenu AS dernier_contenu,
            m.date_envoi AS dernier_date,

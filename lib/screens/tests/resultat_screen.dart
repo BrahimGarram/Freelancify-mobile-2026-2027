@@ -7,6 +7,7 @@ import '../../services/test_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_widgets.dart';
 import 'certificat_screen.dart';
+import 'demande_tentative_screen.dart';
 import 'quiz_screen.dart';
 import 'rapport_ia_carte.dart';
 
@@ -51,6 +52,20 @@ class _ResultatScreenState extends State<ResultatScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  // ---------- FONCTIONNALITÉ : tentative supplémentaire ----------
+  Future<void> _demander() async {
+    final accorde = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => DemandeTentativeScreen(
+          user: widget.user,
+          domaines: widget.domaines,
+        ),
+      ),
+    );
+    // retour à l'espace des tests, où le bouton « Passer un test » est revenu
+    if (accorde == true && mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -127,8 +142,12 @@ class _ResultatScreenState extends State<ResultatScreen> {
                         'être certifié. Il te reste ${r.tentativesRestantes} '
                         'tentative${r.tentativesRestantes > 1 ? 's' : ''}, '
                         'avec de nouvelles questions.'
+                  : r.peutDemanderTentative
+                  ? 'Il fallait au moins ${TestService.seuilReussite} %. Tu as '
+                        'utilisé tes ${r.tentativesTotal} tentatives, mais tu '
+                        'peux en demander une de plus.'
                   : 'Il fallait au moins ${TestService.seuilReussite} %. Tu as '
-                        'utilisé tes ${TestService.tentativesMax} tentatives : '
+                        'utilisé tes ${r.tentativesTotal} tentatives : '
                         'tu ne peux plus passer le test.',
               textAlign: TextAlign.center,
               style: const TextStyle(
@@ -157,6 +176,11 @@ class _ResultatScreenState extends State<ResultatScreen> {
                     '${r.tentativesRestantes > 1 ? 's' : ''})',
                 loading: _loading,
                 onPressed: _refaire,
+              )
+            else if (r.peutDemanderTentative)
+              PrimaryButton(
+                label: 'Demander une tentative',
+                onPressed: _demander,
               ),
             const SizedBox(height: 10),
             Center(

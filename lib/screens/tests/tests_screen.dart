@@ -9,6 +9,7 @@ import '../../widgets/app_widgets.dart';
 import '../../widgets/home_widgets.dart';
 import 'certificat_screen.dart';
 import 'choix_domaines_screen.dart';
+import 'demande_tentative_screen.dart';
 import 'rapport_ia_carte.dart';
 
 /// « Tests et certifications » du freelancer : passer un test, voir ses
@@ -27,6 +28,7 @@ class _TestsScreenState extends State<TestsScreen> {
   List<TentativeTest> _tentatives = [];
   List<String> _domaines = [];
   EtatTests? _etat;
+  DemandeTentative? _demande;
   bool _loading = true;
 
   @override
@@ -40,9 +42,11 @@ class _TestsScreenState extends State<TestsScreen> {
     final t = await _service.getTentatives(widget.user.id!);
     final d = await _service.domainesProfil(widget.user.id!);
     final e = await _service.etat(widget.user.id!);
+    final demande = await _service.getDemande(widget.user.id!);
     if (mounted) {
       setState(() {
         _etat = e;
+        _demande = demande;
         _certifications = c;
         _tentatives = t;
         _domaines = d;
@@ -56,6 +60,16 @@ class _TestsScreenState extends State<TestsScreen> {
       MaterialPageRoute(builder: (_) => ChoixDomainesScreen(user: widget.user)),
     );
     _charger(); // un test a pu être passé
+  }
+
+  Future<void> _demanderTentative() async {
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            DemandeTentativeScreen(user: widget.user, domaines: _domaines),
+      ),
+    );
+    _charger(); // la tentative a pu être accordée
   }
 
   /// Historique : le rapport de l'IA d'un test passé
@@ -155,7 +169,11 @@ class _TestsScreenState extends State<TestsScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        _ActionTest(etat: _etat!, onPasser: _nouveauTest),
+                        _ActionTest(
+                          etat: _etat!,
+                          onPasser: _nouveauTest,
+                          onDemander: _demanderTentative,
+                        ),
                       ],
                     ),
                   ),
@@ -205,6 +223,10 @@ class _TestsScreenState extends State<TestsScreen> {
                         tentative: t,
                         onTap: t.enCours ? null : () => _voirRapport(t),
                       ),
+                  if (_demande != null) ...[
+                    const SizedBox(height: 20),
+                    _CarteDemande(demande: _demande!),
+                  ],
                 ],
               ),
             ),
@@ -222,9 +244,11 @@ class _Titre extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 10),
     child: Row(
       children: [
-        Text(
-          texte,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        Flexible(
+          child: Text(
+            texte,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
         ),
         const SizedBox(width: 8),
         Text(
@@ -360,7 +384,12 @@ class CarteCertificationResume extends StatelessWidget {
 class _ActionTest extends StatelessWidget {
   final EtatTests etat;
   final VoidCallback onPasser;
-  const _ActionTest({required this.etat, required this.onPasser});
+  final VoidCallback onDemander;
+  const _ActionTest({
+    required this.etat,
+    required this.onPasser,
+    required this.onDemander,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -376,6 +405,24 @@ class _ActionTest extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
           ),
+        ],
+      );
+    }
+    if (etat.peutDemanderTentative) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Tu as utilisé tes ${etat.max} tentatives. Tu peux en demander '
+            'une dernière en expliquant ta situation.',
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.4,
+              color: AppColors.label,
+            ),
+          ),
+          const SizedBox(height: 12),
+          PrimaryButton(label: 'Demander une tentative', onPressed: onDemander),
         ],
       );
     }
@@ -409,6 +456,169 @@ class _ActionTest extends StatelessWidget {
               style: const TextStyle(fontSize: 13, height: 1.4),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Ma demande de tentative supplémentaire : statut, détail repliable
+class _CarteDemande extends StatefulWidget {
+  final DemandeTentative demande;
+  const _CarteDemande({required this.demande});
+
+  @override
+  State<_CarteDemande> createState() => _CarteDemandeState();
+}
+
+class _CarteDemandeState extends State<_CarteDemande> {
+  bool _visible = false;
+
+  void _basculer() => setState(() => _visible = !_visible);
+
+  @override
+  Widget build(BuildContext context) {
+    final d = widget.demande;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.fieldBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.assignment_outlined,
+                  size: 22,
+                  color: AppColors.cyan,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Ma demande de tentative',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Envoyée le ${formatDate(DateTime.parse(d.date))}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _BadgeStatut(texte: d.statutLisible),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: _basculer,
+              icon: Icon(
+                _visible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: 18,
+              ),
+              label: Text(_visible ? 'Masquer' : 'Afficher'),
+              style: TextButton.styleFrom(foregroundColor: AppColors.cyan),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: !_visible
+                ? const SizedBox(width: double.infinity)
+                : Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _LigneDemande(
+                          titre: 'Motif',
+                          valeur: d.precision == null
+                              ? d.motifLisible
+                              : '${d.motifLisible} : ${d.precision}',
+                        ),
+                        _LigneDemande(
+                          titre: "Ce qui s'est passé",
+                          valeur: d.explication,
+                        ),
+                        _LigneDemande(titre: 'Révisions', valeur: d.revisions),
+                        _LigneDemande(
+                          titre: 'Heures de révision',
+                          valeur: '${d.heures} h',
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BadgeStatut extends StatelessWidget {
+  final String texte;
+  const _BadgeStatut({required this.texte});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0x26FFB86B),
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: const Color(0x80FFB86B)),
+      ),
+      child: Text(
+        texte,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFB86B),
+        ),
+      ),
+    );
+  }
+}
+
+class _LigneDemande extends StatelessWidget {
+  final String titre;
+  final String valeur;
+  const _LigneDemande({required this.titre, required this.valeur});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titre,
+            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+          ),
+          const SizedBox(height: 2),
+          Text(valeur, style: const TextStyle(fontSize: 14, height: 1.4)),
         ],
       ),
     );
