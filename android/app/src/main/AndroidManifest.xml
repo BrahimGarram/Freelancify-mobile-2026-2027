@@ -2,7 +2,7 @@
     <!-- Nécessaire pour l'assistant IA (Gemini) -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="sae2_brahim"
+        android:label="Freelance"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

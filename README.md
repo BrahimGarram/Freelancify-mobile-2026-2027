@@ -22,7 +22,7 @@ et postulent. Une fois le compte créé, tout fonctionne **hors connexion** ; l'
 ![PDF](https://img.shields.io/badge/Certificat-PDF-EC1C24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
 ![Observer](https://img.shields.io/badge/Design%20Pattern-Observer-F7B93E?style=for-the-badge&logo=databricks&logoColor=black)
 
-![Tests](https://img.shields.io/badge/Tests-120%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
+![Tests](https://img.shields.io/badge/Tests-123%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
 ![Lint](https://img.shields.io/badge/flutter%20analyze-0%20probl%C3%A8me-25F4EE?style=for-the-badge&logo=dart&logoColor=black)
 ![Langue](https://img.shields.io/badge/Interface-Fran%C3%A7ais-EE1D52?style=for-the-badge&logo=googletranslate&logoColor=white)
 
@@ -81,6 +81,7 @@ et postulent. Une fois le compte créé, tout fonctionne **hors connexion** ; l'
 | 🔑 | **Mot de passe oublié** | Code à 6 chiffres envoyé par email, valable 15 min, 5 essais |
 | 👤 | **Profil soigné** | Carte d'identité, statistiques, « Complète ton profil », déconnexion confirmée |
 | 📴 | **Hors connexion** | Missions, messages, tests : tout est stocké sur le téléphone (SQLite). Seules l'inscription, l'IA et les emails demandent Internet |
+| 🎬 | **Ouverture animée** | Logo natif dès le lancement, puis animation jusqu'à ce que l'app soit prête |
 | 📱 | **Petits écrans** | Interface vérifiée jusqu'à 320 dp de large, thème sombre |
 
 </td>
@@ -324,7 +325,7 @@ flutter run
 ## 🧪 Tests
 
 ```bash
-flutter test      # 120 tests
+flutter test      # 123 tests
 flutter analyze   # 0 problème
 ```
 
@@ -364,7 +365,7 @@ lib/
 │   ├── assistant/ · messages/
 │   └── …                     # connexion, inscription, profil, notifications
 ├── theme/ · utils/ · widgets/
-test/                         # 120 tests (unitaires et widgets)
+test/                         # 123 tests (unitaires et widgets)
 assets/config/                # secrets.json (non versionné)
 screenshots/                  # captures d'écran du README
 ```
