@@ -14,6 +14,10 @@ l'assistant IA et le remplissage automatique d'un post par l'IA.
   changé ensuite ; il faut créer un autre compte), nom d'utilisateur (3 à 20
   caractères : lettres, chiffres, . _ -), email, mot de passe (8 caractères
   minimum avec au moins une lettre et un chiffre, sans espace) et confirmation.
+- Vérification de l'email à l'inscription (client et freelancer) : un code à
+  6 chiffres est envoyé à l'adresse saisie (valable 15 minutes, 5 essais,
+  regarder aussi les spams). Le compte n'est créé qu'une fois le code saisi.
+  Bouton « Renvoyer le code » après 60 secondes. Nécessite Internet.
 - Connexion avec email + mot de passe. La session reste ouverte au prochain
   lancement jusqu'à la déconnexion.
 - « Mot de passe oublié ? » (écran de connexion) : entrer l'email du compte,

@@ -142,6 +142,91 @@ Cet email est envoyé automatiquement, merci de ne pas y répondre.
     );
   }
 
+  /// Email de vérification de l'adresse à l'inscription
+  static EmailSortant codeVerification({
+    required String nom,
+    required String email,
+    required String code,
+    required int minutes,
+  }) {
+    final texte =
+        '''
+Bonjour $nom,
+
+Pour créer ton compte sur l'application freelance, confirme ton adresse email.
+
+Ton code : $code
+
+Il est valable $minutes minutes. Saisis-le dans l'application pour terminer
+ton inscription.
+
+Si tu n'es pas à l'origine de cette demande, ignore cet email : aucun compte
+ne sera créé.
+
+—
+L'équipe freelance
+Cet email est envoyé automatiquement, merci de ne pas y répondre.
+''';
+    return EmailSortant(
+      destinataire: email,
+      sujet: 'Vérifie ton email freelance : $code',
+      texte: texte,
+      html: _htmlCode(
+        surtitre: 'Vérification de ton email',
+        titre: 'Ton code pour créer ton compte',
+        nom: nom,
+        consigne:
+            "saisis ce code dans l'application pour terminer ton inscription :",
+        code: code,
+        minutes: minutes,
+        remarque: "Si tu n'es pas à l'origine de cette demande, ignore cet email : aucun compte ne sera créé.",
+      ),
+    );
+  }
+
+  static String _htmlCode({
+    required String surtitre,
+    required String titre,
+    required String nom,
+    required String consigne,
+    required String code,
+    required int minutes,
+    required String remarque,
+  }) {
+    final e = _html;
+    return '''
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;">
+        <tr><td style="background:#000000;padding:20px 28px;">
+          <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">freelance</span>
+          <span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:#EE1D52;margin-left:4px;"></span>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#EE1D52;text-transform:uppercase;letter-spacing:1px;">${e(surtitre)}</p>
+          <h1 style="margin:0 0 18px;font-size:22px;line-height:1.3;">${e(titre)}</h1>
+          <p style="margin:0 0 18px;font-size:15px;line-height:1.5;">Bonjour ${e(nom)},<br>${e(consigne)}</p>
+          <p style="margin:0 0 18px;text-align:center;">
+            <span style="display:inline-block;padding:14px 22px;background:#fafafa;border:1px solid #e4e4e7;border-radius:12px;font-size:32px;font-weight:800;letter-spacing:8px;font-family:'Courier New',monospace;">${e(code)}</span>
+          </p>
+          <p style="margin:0 0 6px;font-size:14px;color:#3f3f46;">Il est valable <b>$minutes minutes</b>.</p>
+          <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#71717a;">${e(remarque)}</p>
+        </td></tr>
+        <tr><td style="padding:16px 28px;border-top:1px solid #f4f4f5;font-size:12px;color:#a1a1aa;">
+          Cet email est envoyé automatiquement, merci de ne pas y répondre.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+''';
+  }
+
   /// Code de réinitialisation du mot de passe
   static EmailSortant codeReinitialisation({
     required String nom,
@@ -167,39 +252,15 @@ passe ne change pas.
 L'équipe freelance
 Cet email est envoyé automatiquement, merci de ne pas y répondre.
 ''';
-    final e = _html;
-    final html =
-        '''
-<!DOCTYPE html>
-<html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;color:#18181b;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:24px 12px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;">
-        <tr><td style="background:#000000;padding:20px 28px;">
-          <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">freelance</span>
-          <span style="display:inline-block;width:8px;height:8px;border-radius:4px;background:#EE1D52;margin-left:4px;"></span>
-        </td></tr>
-        <tr><td style="padding:28px;">
-          <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#EE1D52;text-transform:uppercase;letter-spacing:1px;">Mot de passe oublié</p>
-          <h1 style="margin:0 0 18px;font-size:22px;line-height:1.3;">Ton code de réinitialisation</h1>
-          <p style="margin:0 0 18px;font-size:15px;line-height:1.5;">Bonjour ${e(nom)},<br>saisis ce code dans l'application pour choisir un nouveau mot de passe :</p>
-          <p style="margin:0 0 18px;text-align:center;">
-            <span style="display:inline-block;padding:14px 22px;background:#fafafa;border:1px solid #e4e4e7;border-radius:12px;font-size:32px;font-weight:800;letter-spacing:8px;font-family:'Courier New',monospace;">${e(code)}</span>
-          </p>
-          <p style="margin:0 0 6px;font-size:14px;color:#3f3f46;">Il est valable <b>$minutes minutes</b>.</p>
-          <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:#71717a;">Si tu n'es pas à l'origine de cette demande, ignore cet email : ton mot de passe ne change pas.</p>
-        </td></tr>
-        <tr><td style="padding:16px 28px;border-top:1px solid #f4f4f5;font-size:12px;color:#a1a1aa;">
-          Cet email est envoyé automatiquement, merci de ne pas y répondre.
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>
-''';
+    final html = _htmlCode(
+      surtitre: 'Mot de passe oublié',
+      titre: 'Ton code de réinitialisation',
+      nom: nom,
+      consigne: "saisis ce code dans l'application pour choisir un nouveau mot de passe :",
+      code: code,
+      minutes: minutes,
+      remarque: "Si tu n'es pas à l'origine de cette demande, ignore cet email : ton mot de passe ne change pas.",
+    );
     return EmailSortant(
       destinataire: email,
       sujet: 'Ton code freelance : $code',

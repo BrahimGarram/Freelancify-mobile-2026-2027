@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../models/user.dart';
-import '../services/user_service.dart';
+import '../services/verification_email_service.dart';
 import '../theme/app_theme.dart';
 import '../utils/validators.dart';
 import '../widgets/app_widgets.dart';
+import 'verification_email.dart';
 
 class InscriptionScreen extends StatefulWidget {
-  const InscriptionScreen({super.key});
+  final VerificationEmailService? service; // remplaçable dans les tests
+  const InscriptionScreen({super.key, this.service});
 
   @override
   State<InscriptionScreen> createState() => _InscriptionScreenState();
@@ -19,7 +21,7 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
-  final _userService = UserService();
+  late final _verification = widget.service ?? VerificationEmailService();
 
   String _role = 'freelancer'; // 'freelancer' ou 'client'
   bool _loading = false;
@@ -39,32 +41,44 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim().toLowerCase();
+    final nom = _usernameController.text.trim();
     setState(() => _loading = true);
 
     try {
-      // 2. Vérifier que l'email n'est pas déjà utilisé
-      if (await _userService.emailExists(email)) {
-        if (mounted) {
-          showAppMessage(context, 'Cet email est déjà utilisé', error: true);
-        }
-        return;
+      // 2. Envoyer un code à cette adresse (le compte n'est pas encore créé)
+      var attente = VerificationEmailService.delaiRenvoi.inSeconds;
+      try {
+        await _verification.demanderCode(nom: nom, email: email);
+      } on AttenteRenvoiException catch (e) {
+        attente = e.secondes; // un code vient de partir : il reste valable
       }
-
-      // 3. Créer l'utilisateur via le service
-      await _userService.insertUser(
-        User(
-          username: _usernameController.text.trim(),
-          email: email,
-          password: _passwordController.text,
-          role: _role,
-        ),
-      );
-
       if (!mounted) return;
 
-      // 4. Succès → message + retour à la page de connexion
-      showAppMessage(context, 'Compte créé ! Tu peux te connecter.');
-      Navigator.of(context).pop();
+      // 3. Saisie du code : c'est cet écran qui crée le compte
+      final cree = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (_) => VerificationEmailScreen(
+            user: User(
+              username: nom,
+              email: email,
+              password: _passwordController.text,
+              role: _role,
+            ),
+            service: _verification,
+            attenteInitiale: attente,
+          ),
+        ),
+      );
+      if (cree != true || !mounted) return;
+
+      // 4. Succès → message + retour à la connexion (email pré-rempli)
+      showAppMessage(
+        context,
+        'Email vérifié, compte créé ! Tu peux te connecter.',
+      );
+      Navigator.of(context).pop(email);
+    } on VerificationException catch (e) {
+      if (mounted) showAppMessage(context, e.message, error: true);
     } catch (e) {
       if (mounted) showAppMessage(context, 'Erreur : $e', error: true);
     } finally {
@@ -119,29 +133,32 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
                     ),
                     const SizedBox(height: 18),
 
-                    // Choix du rôle
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _RoleCard(
-                            title: 'Freelancer',
-                            description: 'Je cherche des missions',
-                            icon: Icons.laptop_mac_rounded,
-                            selected: _role == 'freelancer',
-                            onTap: () => setState(() => _role = 'freelancer'),
+                    // Choix du rôle (les deux cartes gardent la même hauteur)
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _RoleCard(
+                              title: 'Freelancer',
+                              description: 'Je cherche des missions',
+                              icon: Icons.laptop_mac_rounded,
+                              selected: _role == 'freelancer',
+                              onTap: () => setState(() => _role = 'freelancer'),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _RoleCard(
-                            title: 'Client',
-                            description: 'Je publie des missions',
-                            icon: Icons.work_outline_rounded,
-                            selected: _role == 'client',
-                            onTap: () => setState(() => _role = 'client'),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _RoleCard(
+                              title: 'Client',
+                              description: 'Je publie des missions',
+                              icon: Icons.work_outline_rounded,
+                              selected: _role == 'client',
+                              onTap: () => setState(() => _role = 'client'),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 22),
 
@@ -198,8 +215,9 @@ class _InscriptionScreenState extends State<InscriptionScreen> {
                     ),
                     const SizedBox(height: 20),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         const Text(
                           'Déjà un compte ?',
@@ -289,7 +307,7 @@ class _RoleCard extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 136,
+          constraints: const BoxConstraints(minHeight: 136),
           padding: const EdgeInsets.fromLTRB(14, 16, 14, 14),
           decoration: BoxDecoration(
             color: selected ? AppColors.selectedCard : AppColors.surface,
@@ -340,7 +358,7 @@ class _RoleCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const Spacer(),
+              const SizedBox(height: 14),
               Text(
                 title,
                 style: const TextStyle(

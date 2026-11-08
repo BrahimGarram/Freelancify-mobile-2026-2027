@@ -47,9 +47,10 @@ class DatabaseHelper {
       //              du freelancer, réponse vide si le temps est écoulé.
       // Version 12 : 3 tentatives max (une tentative compte dès le début du
       //              test) et rapports de l'IA après chaque test.
+      // Version 13 : codes de vérification de l'email à l'inscription.
       // Si l'app était déjà installée, onUpgrade met la base à jour
       // sans effacer tes utilisateurs.
-      version: 12,
+      version: 13,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -72,6 +73,7 @@ class DatabaseHelper {
     await _createCodesReinitialisation(db);
     await _createAbonnementsEtNotifications(db);
     await _createTestsEtCertifications(db);
+    await _createVerificationsEmail(db);
   }
 
   // App déjà installée avec une ancienne version
@@ -133,6 +135,9 @@ class DatabaseHelper {
         );
       }
       await _createRapportsTest(db);
+    }
+    if (oldVersion < 13) {
+      await _createVerificationsEmail(db);
     }
   }
 
@@ -297,6 +302,20 @@ class DatabaseHelper {
 
   /// Codes à 6 chiffres envoyés par email pour réinitialiser un mot de
   /// passe. Le code n'est jamais stocké en clair (seulement son hash).
+  /// Inscription en attente : le code envoyé à une adresse (une ligne par
+  /// adresse). Le compte n'est créé dans `users` qu'une fois le code validé.
+  Future<void> _createVerificationsEmail(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS verifications_email (
+        email TEXT PRIMARY KEY,
+        code_hash TEXT NOT NULL,
+        expire_le TEXT NOT NULL,
+        tentatives INTEGER NOT NULL DEFAULT 0,
+        date_creation TEXT NOT NULL
+      )
+    ''');
+  }
+
   Future<void> _createCodesReinitialisation(Database db) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS codes_reinitialisation (

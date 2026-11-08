@@ -8,7 +8,7 @@
 
 Les **clients** publient leurs missions (ou les décrivent simplement à l'IA), les **freelancers**
 prouvent leurs compétences par un test chronométré, obtiennent une **certification PDF**
-et postulent. Tout fonctionne **hors connexion** ; l'IA s'active dès qu'il y a du réseau.
+et postulent. Une fois le compte créé, tout fonctionne **hors connexion** ; l'IA s'active dès qu'il y a du réseau.
 
 <br>
 
@@ -22,7 +22,7 @@ et postulent. Tout fonctionne **hors connexion** ; l'IA s'active dès qu'il y a 
 ![PDF](https://img.shields.io/badge/Certificat-PDF-EC1C24?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)
 ![Observer](https://img.shields.io/badge/Design%20Pattern-Observer-F7B93E?style=for-the-badge&logo=databricks&logoColor=black)
 
-![Tests](https://img.shields.io/badge/Tests-112%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
+![Tests](https://img.shields.io/badge/Tests-120%20r%C3%A9ussis-25F4EE?style=for-the-badge&logo=checkmarx&logoColor=black)
 ![Lint](https://img.shields.io/badge/flutter%20analyze-0%20probl%C3%A8me-25F4EE?style=for-the-badge&logo=dart&logoColor=black)
 ![Langue](https://img.shields.io/badge/Interface-Fran%C3%A7ais-EE1D52?style=for-the-badge&logo=googletranslate&logoColor=white)
 
@@ -77,9 +77,10 @@ et postulent. Tout fonctionne **hors connexion** ; l'IA s'active dès qu'il y a 
 |:-:|---|---|
 | 💬 | **Messagerie** | Une discussion par candidature, entre client et freelancer |
 | 🤖 | **Assistant IA** | Un chatbot qui connaît l'app et répond en 1 à 3 phrases, selon ton rôle |
+| ✉️ | **Email vérifié** | À l'inscription, client ou freelancer : le compte n'est créé qu'après la saisie d'un code reçu par email |
 | 🔑 | **Mot de passe oublié** | Code à 6 chiffres envoyé par email, valable 15 min, 5 essais |
 | 👤 | **Profil soigné** | Carte d'identité, statistiques, « Complète ton profil », déconnexion confirmée |
-| 📴 | **Hors connexion** | Comptes, missions, messages, tests : tout est stocké sur le téléphone (SQLite) |
+| 📴 | **Hors connexion** | Missions, messages, tests : tout est stocké sur le téléphone (SQLite). Seules l'inscription, l'IA et les emails demandent Internet |
 | 📱 | **Petits écrans** | Interface vérifiée jusqu'à 320 dp de large, thème sombre |
 
 </td>
@@ -182,7 +183,7 @@ flowchart TB
         M[Gmail SMTP]
     end
     UI --> SRV
-    SRV <--> DB[(🗄️ SQLite<br/>14 tables · v12)]
+    SRV <--> DB[(🗄️ SQLite<br/>15 tables · v13)]
     SV2 -. rapport .-> G
     UI -. assistant · post .-> G
     SV4 --> M
@@ -233,7 +234,7 @@ classDiagram
 </details>
 
 <details>
-<summary><b>🗄️ Base de données (SQLite, version 12)</b></summary>
+<summary><b>🗄️ Base de données (SQLite, version 13)</b></summary>
 
 <br>
 
@@ -262,9 +263,9 @@ erDiagram
 | `test` | Banque de 140 questions, avec la durée de chacune |
 | `tentatives_test` · `reponses_test` | Tests passés et réponses données |
 | `certifications` · `rapports_test` | Certificats délivrés et rapports de l'IA |
-| `emails_sortants` · `codes_reinitialisation` | File d'envoi des emails (5 essais) et codes temporaires |
+| `emails_sortants` · `codes_reinitialisation` · `verifications_email` | File d'envoi des emails (5 essais) et codes temporaires |
 
-Les **migrations** font passer une ancienne installation à la version 12 **sans perdre de données**.
+Les **migrations** font passer une ancienne installation à la version 13 **sans perdre de données**.
 
 </details>
 
@@ -279,7 +280,7 @@ Les **migrations** font passer une ancienne installation à la version 12 **sans
 | ![Flutter](https://img.shields.io/badge/-Flutter-02569B?logo=flutter&logoColor=white) | 3.47 ou plus (Dart 3.13) | [flutter.dev](https://docs.flutter.dev/get-started/install) |
 | ![Android Studio](https://img.shields.io/badge/-Android%20Studio-3DDC84?logo=androidstudio&logoColor=white) | avec un émulateur ou un téléphone Android | [developer.android.com](https://developer.android.com/studio) |
 | ![Gemini](https://img.shields.io/badge/-Clés%20Gemini-8E75B2?logo=googlegemini&logoColor=white) | gratuites (facultatif) | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
-| ![Gmail](https://img.shields.io/badge/-Mot%20de%20passe%20d'application-EA4335?logo=gmail&logoColor=white) | facultatif, pour les emails | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
+| ![Gmail](https://img.shields.io/badge/-Mot%20de%20passe%20d'application-EA4335?logo=gmail&logoColor=white) | **nécessaire pour créer un compte** | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
 
 ### 1️⃣ Cloner le dépôt
 
@@ -289,7 +290,7 @@ cd Freelancify-mobile-2026-2027
 flutter pub get
 ```
 
-### 2️⃣ Configurer les secrets (facultatif)
+### 2️⃣ Configurer les secrets
 
 Copie le modèle puis remplis-le. Ce fichier **n'est jamais envoyé sur GitHub** :
 
@@ -307,7 +308,7 @@ cp secrets.example.json assets/config/secrets.json
 }
 ```
 
-> 💡 Sans ce fichier, l'app fonctionne normalement : seules l'IA et les emails sont désactivés.
+> ⚠️ `GMAIL_USER` et `GMAIL_APP_PASSWORD` sont indispensables pour **créer un compte** (code de vérification par email). Sans clés Gemini, seule l'IA est désactivée.
 > Au démarrage, le terminal affiche l'état de chaque clé (`[IA] … clé OK`, `[MAIL] Emails ACTIVÉS`).
 
 ### 3️⃣ Lancer l'application
@@ -323,7 +324,7 @@ flutter run
 ## 🧪 Tests
 
 ```bash
-flutter test      # 112 tests
+flutter test      # 120 tests
 flutter analyze   # 0 problème
 ```
 
@@ -334,7 +335,7 @@ flutter analyze   # 0 problème
 | `test_competences_ecrans_test.dart` | Parcours complet à 432 et 320 dp, chronomètre, blocage de « Postuler » |
 | `ia_test.dart` | Assistant et remplissage des posts (API Gemini simulée) |
 | `observer_test.dart` | Abonnement, notification des abonnés, cloche |
-| `mail_test.dart` · `mot_de_passe_oublie_test.dart` | Emails, file d'envoi, codes de réinitialisation |
+| `mail_test.dart` · `mot_de_passe_oublie_test.dart` · `verification_email_test.dart` | Emails, file d'envoi, codes de réinitialisation et de vérification |
 | … | Validateurs, messagerie, portfolio, profil, publication |
 
 Les tests utilisent une **base SQLite en mémoire** et des **faux clients HTTP** : aucun appel réseau.
@@ -347,7 +348,7 @@ Les tests utilisent une **base SQLite en mémoire** et des **faux clients HTTP**
 lib/
 ├── main.dart                 # démarrage : secrets, observateurs, app
 ├── database/
-│   ├── database_helper.dart  # 14 tables, migrations v1 → v12
+│   ├── database_helper.dart  # 15 tables, migrations v1 → v13
 │   └── questions_test.dart   # banque de 140 questions
 ├── models/                   # User, Post, Candidature, Quiz, Certification…
 ├── observer/                 # pattern Observer : Sujet, Observateur, FluxPosts
@@ -363,7 +364,7 @@ lib/
 │   ├── assistant/ · messages/
 │   └── …                     # connexion, inscription, profil, notifications
 ├── theme/ · utils/ · widgets/
-test/                         # 112 tests (unitaires et widgets)
+test/                         # 120 tests (unitaires et widgets)
 assets/config/                # secrets.json (non versionné)
 screenshots/                  # captures d'écran du README
 ```

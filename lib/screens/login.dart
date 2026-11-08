@@ -55,6 +55,16 @@ class _LoginScreenState extends State<LoginScreen> {
     _passwordController.clear();
   }
 
+  Future<void> _inscription() async {
+    final email = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const InscriptionScreen()),
+    );
+    if (email == null || !mounted) return;
+    // compte créé : on pré-remplit l'email pour se connecter
+    _emailController.text = email;
+    _passwordController.clear();
+  }
+
   Future<void> _seConnecter() async {
     // 1. Vérifier que les champs sont bien remplis
     if (!_formKey.currentState!.validate()) return;
@@ -215,11 +225,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (_) => const InscriptionScreen(),
-                                    ),
-                                  ),
+                                  onPressed: _inscription,
                                   style: TextButton.styleFrom(
                                     foregroundColor: AppColors.cyan,
                                   ),
