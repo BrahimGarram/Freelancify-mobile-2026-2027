@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'database/database_helper.dart';
 import 'models/user.dart';
 import 'observer/observateurs_posts.dart';
 import 'screens/home_router.dart';
 import 'screens/login.dart';
+import 'screens/splash_screen.dart';
 import 'services/ai/ai_config.dart';
 import 'services/mail/mail_service.dart';
 import 'services/secrets.dart';
@@ -53,8 +55,8 @@ class FreelanceApp extends StatelessWidget {
   }
 }
 
-/// Au lancement : si une session existe, on ouvre directement l'espace
-/// de l'utilisateur ; sinon on affiche l'écran de connexion.
+/// Au lancement : logo animé pendant la préparation, puis l'espace de
+/// l'utilisateur si une session existe, sinon l'écran de connexion.
 class DemarrageScreen extends StatefulWidget {
   const DemarrageScreen({super.key});
 
@@ -67,6 +69,8 @@ class _DemarrageScreenState extends State<DemarrageScreen> {
 
   Future<User?> _restaurerSession() async {
     try {
+      // la base (et ses 140 questions au 1er lancement) se prépare sous le logo
+      await DatabaseHelper.instance.database;
       final id = await SessionManager.getUserId();
       if (id == null) return null;
       final user = await UserService().getUserById(id);
@@ -80,19 +84,9 @@ class _DemarrageScreenState extends State<DemarrageScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<User?>(
-      future: _session,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(color: AppColors.cyan),
-            ),
-          );
-        }
-        final user = snapshot.data;
-        return user == null ? const LoginScreen() : accueilPour(user);
-      },
+    return SplashScreen<User?>(
+      chargement: _session,
+      suivant: (user) => user == null ? const LoginScreen() : accueilPour(user),
     );
   }
 }
