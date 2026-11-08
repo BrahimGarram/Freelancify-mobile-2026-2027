@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../models/project.dart';
 import '../models/realisation.dart';
 import '../models/test_competences.dart';
 import '../models/user.dart';
 import '../services/realisation_service.dart';
+import '../services/project_service.dart';
 import '../services/test_service.dart';
 import '../services/user_service.dart';
 import '../theme/app_theme.dart';
@@ -53,6 +55,7 @@ class _ProfilFreelancerScreenState extends State<ProfilFreelancerScreen> {
   List<Realisation> _realisations = [];
   int _nbMissions = 0;
   List<Certification> _certifications = [];
+  List<Project> _completedProjects = [];
   bool _loading = true;
 
   bool get _estMoi => widget.viewer.id == widget.freelancerId;
@@ -71,12 +74,15 @@ class _ProfilFreelancerScreenState extends State<ProfilFreelancerScreen> {
         widget.freelancerId,
       );
       final c = await TestService().getCertifications(widget.freelancerId);
+      final completedProjects = await ProjectService()
+          .getCompletedProjectsForFreelancer(widget.freelancerId);
       if (!mounted) return;
       setState(() {
         _freelancer = f;
         _realisations = r;
         _nbMissions = n;
         _certifications = c;
+        _completedProjects = completedProjects;
         _loading = false;
       });
     } catch (e) {
@@ -222,6 +228,8 @@ class _ProfilFreelancerScreenState extends State<ProfilFreelancerScreen> {
                 children: [
                   _buildEnTete(f),
                   const SizedBox(height: 24),
+                  _buildCompletedProjects(),
+                  if (_completedProjects.isNotEmpty) const SizedBox(height: 24),
                   ..._buildCertifications(),
                   Row(
                     children: [
@@ -265,6 +273,72 @@ class _ProfilFreelancerScreenState extends State<ProfilFreelancerScreen> {
     );
   }
 
+  Widget _buildCompletedProjects() {
+    if (_completedProjects.isEmpty && !_estMoi) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Projets terminés',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${_completedProjects.length}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textMuted,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_completedProjects.isEmpty)
+          const Text(
+            'Aucun projet terminé pour le moment.',
+            style: TextStyle(color: AppColors.textMuted),
+          )
+        else
+          for (final project in _completedProjects.take(3))
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.fieldBorder),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_outline, color: AppColors.cyan),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      project.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  Text(
+                    '${project.validatedTasks}/${project.totalTasks}',
+                    style: const TextStyle(
+                      color: AppColors.cyan,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ],
+    );
+  }
+
   Widget _buildEnTete(User f) {
     return Column(
       children: [
@@ -288,6 +362,29 @@ class _ProfilFreelancerScreenState extends State<ProfilFreelancerScreen> {
           const SizedBox(height: 12),
           Center(child: PucesDomaines(domaines: f.domaines)),
         ],
+        const SizedBox(height: 12),
+        Tooltip(
+          message: 'Total de CofeeCoins reçus',
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.local_cafe_outlined,
+                size: 18,
+                color: AppColors.cyan,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                '${f.cofeecoins}',
+                style: const TextStyle(
+                  color: AppColors.cyan,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 14),
         if (f.bio != null)
           Text(

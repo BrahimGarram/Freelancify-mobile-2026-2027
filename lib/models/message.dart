@@ -43,6 +43,7 @@ class Conversation {
   final String statutCandidature; // 'en_attente', 'acceptee', 'refusee'
   final int freelancerId;
   final String freelancerUsername;
+  final int freelancerCofeeCoins;
   final int clientId;
   final String clientUsername;
   final String? dernierMessage;
@@ -57,6 +58,7 @@ class Conversation {
     required this.statutCandidature,
     required this.freelancerId,
     required this.freelancerUsername,
+    required this.freelancerCofeeCoins,
     required this.clientId,
     required this.clientUsername,
     this.dernierMessage,
@@ -82,6 +84,7 @@ class Conversation {
     statutCandidature: map['statut'] as String,
     freelancerId: map['freelancer_id'] as int,
     freelancerUsername: map['freelancer_username'] as String,
+    freelancerCofeeCoins: (map['freelancer_cofeecoins'] as num?)?.toInt() ?? 0,
     clientId: map['client_id'] as int,
     clientUsername: map['client_username'] as String,
     dernierMessage: map['dernier_contenu'] as String?,

@@ -1,5 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart';
 
 import 'questions_test.dart';
 
@@ -29,7 +30,9 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB() async {
-    final path = overridePath ?? join(await getDatabasesPath(), 'app.db');
+    final path =
+        overridePath ??
+        (kIsWeb ? 'freelancify.db' : join(await getDatabasesPath(), 'app.db'));
 
     return await openDatabase(
       path,
@@ -47,9 +50,16 @@ class DatabaseHelper {
       //              du freelancer, réponse vide si le temps est écoulé.
       // Version 12 : 3 tentatives max (une tentative compte dès le début du
       //              test) et rapports de l'IA après chaque test.
+      // Version 13 : projets créés après l'acceptation d'une candidature,
+      // tâches, commentaires et historique d'activité.
+      // Version 14 : pièces jointes et liens des tâches.
+      // Version 15 : soumission du travail et revue par le client.
+      // Version 16 : réparation des bases marquées v15 mais incomplètes.
+      // Version 17 : CofeeCoins et récompenses de projets.
+      // Version 18 : solde client et compteur de CofeeCoins donnés.
       // Si l'app était déjà installée, onUpgrade met la base à jour
       // sans effacer tes utilisateurs.
-      version: 12,
+      version: 18,
       onConfigure: _onConfigure,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
@@ -72,6 +82,7 @@ class DatabaseHelper {
     await _createCodesReinitialisation(db);
     await _createAbonnementsEtNotifications(db);
     await _createTestsEtCertifications(db);
+    await _createProjetsEtTaches(db);
   }
 
   // App déjà installée avec une ancienne version
@@ -134,6 +145,98 @@ class DatabaseHelper {
       }
       await _createRapportsTest(db);
     }
+    if (oldVersion < 13) {
+      await _createProjetsEtTaches(db);
+      await db.execute('''
+        INSERT INTO projects (
+          candidature_id, post_id, client_id, freelancer_id, title,
+          description, deadline, status, created_at, updated_at
+        )
+        SELECT c.id, p.id, p.client_id, c.freelancer_id, p.titre,
+               p.description, p.date_limite, 'en_cours',
+               c.date_candidature, c.date_candidature
+        FROM candidatures c
+        JOIN posts p ON p.id = c.post_id
+        WHERE c.statut = 'acceptee'
+          AND NOT EXISTS (
+            SELECT 1 FROM projects pr WHERE pr.candidature_id = c.id
+          )
+      ''');
+    }
+    if (oldVersion < 14) {
+      for (final column in {
+        'drive_url': 'TEXT',
+        'github_url': 'TEXT',
+        'attachment_name': 'TEXT',
+        'attachment_mime': 'TEXT',
+        'attachment_bytes': 'BLOB',
+      }.entries) {
+        if (!await _colonneExiste(db, 'project_tasks', column.key)) {
+          await db.execute(
+            'ALTER TABLE project_tasks ADD COLUMN ${column.key} ${column.value}',
+          );
+        }
+      }
+    }
+    if (oldVersion < 16) {
+      // Certaines bases ont été marquées v15 alors que leur migration
+      // n'avait pas ajouté toutes les colonnes.
+      await _ajouterColonnesSoumission(db);
+    }
+    if (oldVersion < 17) {
+      await _ajouterCofeeCoins(db);
+    }
+    if (oldVersion < 18) {
+      await _ajouterCofeeCoinsDonnes(db);
+    }
+  }
+
+  Future<void> _ajouterColonnesSoumission(Database db) async {
+    for (final column in {
+      'work_description': 'TEXT',
+      'work_link': 'TEXT',
+      'work_attachment_name': 'TEXT',
+      'work_attachment_mime': 'TEXT',
+      'work_attachment_bytes': 'BLOB',
+      'review_note': 'TEXT',
+      'reviewed_at': 'TEXT',
+    }.entries) {
+      if (!await _colonneExiste(db, 'project_tasks', column.key)) {
+        await db.execute(
+          'ALTER TABLE project_tasks ADD COLUMN ${column.key} ${column.value}',
+        );
+      }
+    }
+  }
+
+  Future<void> _ajouterCofeeCoins(Database db) async {
+    if (!await _colonneExiste(db, 'users', 'cofeecoins')) {
+      await db.execute(
+        "ALTER TABLE users ADD COLUMN cofeecoins INTEGER NOT NULL DEFAULT 0",
+      );
+    }
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_rewards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL UNIQUE,
+        client_id INTEGER NOT NULL,
+        freelancer_id INTEGER NOT NULL,
+        coins INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+  }
+
+  Future<void> _ajouterCofeeCoinsDonnes(Database db) async {
+    if (!await _colonneExiste(db, 'users', 'cofeecoins_donnes')) {
+      await db.execute(
+        "ALTER TABLE users ADD COLUMN cofeecoins_donnes INTEGER NOT NULL DEFAULT 0",
+      );
+    }
   }
 
   /// Colonnes ajoutées aux posts en v4 (avec la valeur donnée aux anciens posts)
@@ -191,7 +294,9 @@ class DatabaseHelper {
         role TEXT NOT NULL CHECK (role IN ('freelancer', 'client')),
         metier TEXT,
         bio TEXT,
-        domaines TEXT
+        domaines TEXT,
+        cofeecoins INTEGER NOT NULL DEFAULT 0,
+        cofeecoins_donnes INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
@@ -442,6 +547,125 @@ class DatabaseHelper {
           ON DELETE CASCADE
       )
     ''');
+  }
+
+  /// Projets de suivi créés lorsqu'une candidature est acceptée.
+  Future<void> _createProjetsEtTaches(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        candidature_id INTEGER NOT NULL UNIQUE,
+        post_id INTEGER NOT NULL,
+        client_id INTEGER NOT NULL,
+        freelancer_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        deadline TEXT,
+        status TEXT NOT NULL DEFAULT 'en_cours'
+          CHECK (status IN ('en_cours', 'en_pause', 'termine', 'annule')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (candidature_id) REFERENCES candidatures(id)
+          ON DELETE CASCADE,
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_projects_client '
+      'ON projects (client_id, status, id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_projects_freelancer '
+      'ON projects (freelancer_id, status, id)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_rewards (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL UNIQUE,
+        client_id INTEGER NOT NULL,
+        freelancer_id INTEGER NOT NULL,
+        coins INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (freelancer_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        priority TEXT NOT NULL DEFAULT 'normale'
+          CHECK (priority IN ('basse', 'normale', 'haute', 'urgente')),
+        status TEXT NOT NULL DEFAULT 'a_faire'
+          CHECK (status IN ('a_faire', 'en_cours', 'a_valider', 'validee', 'refusee')),
+        due_date TEXT,
+        drive_url TEXT,
+        github_url TEXT,
+        attachment_name TEXT,
+        attachment_mime TEXT,
+        attachment_bytes BLOB,
+        work_description TEXT,
+        work_link TEXT,
+        work_attachment_name TEXT,
+        work_attachment_mime TEXT,
+        work_attachment_bytes BLOB,
+        rejection_reason TEXT,
+        review_note TEXT,
+        reviewed_at TEXT,
+        created_by INTEGER NOT NULL,
+        assigned_to INTEGER NOT NULL,
+        validated_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_project_tasks_project '
+      'ON project_tasks (project_id, status, priority, id)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        task_id INTEGER,
+        author_id INTEGER NOT NULL,
+        content TEXT NOT NULL CHECK (length(trim(content)) BETWEEN 1 AND 2000),
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (task_id) REFERENCES project_tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_project_comments_project '
+      'ON project_comments (project_id, id)',
+    );
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS project_activity (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id INTEGER NOT NULL,
+        task_id INTEGER,
+        actor_id INTEGER NOT NULL,
+        action TEXT NOT NULL,
+        details TEXT,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY (task_id) REFERENCES project_tasks(id) ON DELETE CASCADE,
+        FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    ''');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_project_activity_project '
+      'ON project_activity (project_id, id)',
+    );
   }
 
   /// Migration v11 (sans perdre les tests déjà passés)

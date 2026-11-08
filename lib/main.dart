@@ -1,7 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 import 'models/user.dart';
 import 'observer/observateurs_posts.dart';
@@ -16,6 +19,9 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  }
   await Secrets.charger(); // clés Gemini + mot de passe Gmail
   configurerObservateurs(); // pattern Observer : notifications des abonnés
   runApp(const FreelanceApp());
